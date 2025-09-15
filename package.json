@@ -1,7 +1,7 @@
 {
-  "name": "student-led-collabration",
+  "name": "voting-based-team-formation-and-solution-submission-platform",
   "private": true,
-  "description": "Global Student Collaboration & Challenge Management Platform - Full Stack Monorepo (Next.js frontend + Express backend)",
+  "description": "Voting-Based Team Formation and Solution Submission Platform - Full Stack Monorepo (Next.js frontend + Express backend)",
   "workspaces": [
     "frontend",
     "backend"
