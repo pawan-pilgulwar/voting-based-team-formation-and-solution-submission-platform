@@ -15,5 +15,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "prettier": "^3.3.3"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9"
   }
 }
