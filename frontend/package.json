@@ -10,6 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@isaacs/fs-minipass": "^4.0.1",
     "@jridgewell/remapping": "^2.3.5",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-collapsible": "^1.1.12",
