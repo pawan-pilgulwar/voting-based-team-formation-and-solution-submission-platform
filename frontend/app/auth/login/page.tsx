@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,21 +12,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-const page = () => {
+const Page = () => {
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Login to your account</CardTitle>
-        <CardDescription>
-          Enter your email below to login to your account
-        </CardDescription>
-        <CardAction>
-          <Button variant="link">Sign Up</Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <form>
-          <div className="flex flex-col gap-6">
+    <div className="w-full flex items-center justify-center py-10">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle>Welcome back</CardTitle>
+          <CardDescription>
+            Enter your email to sign in to your account
+          </CardDescription>
+    
+        </CardHeader>
+        <CardContent>
+          <form className="flex flex-col gap-6">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -38,27 +37,32 @@ const page = () => {
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <a
-                  href="#"
+                <Link
+                  href="/auth/reset-password"
                   className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                 >
-                  Forgot your password?
-                </a>
+                  Forgot password?
+                </Link>
               </div>
               <Input id="password" type="password" required />
             </div>
-          </div>
-        </form>
-      </CardContent>
-      <CardFooter className="flex-col gap-2">
-        <Button type="submit" className="w-full">
-          Login
-        </Button>
-        <Button variant="outline" className="w-full">
-          Login with Google
-        </Button>
-      </CardFooter>
-    </Card>
+            <Button type="submit" className="w-full">
+              Sign in
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex-col gap-2">
+          <Button variant="outline" className="w-full">
+            Continue with Google
+          </Button>
+          <CardAction className="w-full text-center">
+            <Button variant="link" asChild>
+              <Link href="/auth/register">Don&apos;t have an account? Sign up</Link>
+            </Button>
+          </CardAction>
+        </CardFooter>
+      </Card>
+    </div>
   )
 }
-export default page
+export default Page

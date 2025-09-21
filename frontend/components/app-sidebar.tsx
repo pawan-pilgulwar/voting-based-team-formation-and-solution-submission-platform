@@ -136,6 +136,25 @@ const data = {
       ],
     },
     {
+      title: "Admin",
+      url: "/admin",
+      icon: Settings2,
+      items: [
+        {
+          title: "Overview",
+          url: "/admin",
+        },
+        {
+          title: "Users",
+          url: "/admin/users",
+        },
+        {
+          title: "Challenges",
+          url: "/admin/challenges",
+        },
+      ],
+    },
+    {
       title: "Global Feed",
       url: "#",
       icon: Globe,

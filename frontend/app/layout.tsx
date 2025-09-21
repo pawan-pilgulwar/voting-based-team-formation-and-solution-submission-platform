@@ -19,7 +19,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Student-Led Collaboration Platform | Global Student Network",
-  description: "Join thousands of students worldwide in solving real-world challenges, building meaningful projects, and creating lasting connections across borders. Free platform for global student collaboration.",
+  description:
+    "Join thousands of students worldwide in solving real-world challenges, building meaningful projects, and creating lasting connections across borders. Free platform for global student collaboration.",
 };
 
 export default function RootLayout({
@@ -40,15 +41,15 @@ export default function RootLayout({
         >
           <SidebarProvider defaultOpen={false}>
             <AppSidebar />
-            <main className="flex-1">
-              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <main className="flex-1 min-h-screen flex flex-col">
+              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex items-center gap-2 px-2">
                   <SidebarTrigger className="-ml-1" />
                 </div>
                 <TopNav />
               </header>
               <div className="flex-1 p-6">{children}</div>
-          <Footer />
+              <Footer />
             </main>
           </SidebarProvider>
         </ThemeProvider>

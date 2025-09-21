@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle"
 
 export function TopNav() {
   return (
-    <div className="flex items-center justify-between w-full px-4 py-2">
+    <div className="flex items-center justify-between w-full px-4 py-20">
 
         {/* Logo */}
       <div className="flex items-center gap-4 flex-1 max-w-md">
