@@ -28,15 +28,20 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[{name: 'Jane Doe', email: 'jane@example.com', role: 'student'}, {name: 'John Admin', email: 'admin@example.com', role: 'admin'}].map((u) => (
+              {[
+                { name: 'Jane Doe', email: 'jane@example.com', role: 'student' },
+                { name: 'John Admin', email: 'admin@example.com', role: 'admin' },
+                { name: 'Sam Mentor', email: 'sam.mentor@example.com', role: 'mentor' },
+              ].map((u) => (
                 <TableRow key={u.email}>
                   <TableCell className="font-medium">{u.name}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell className="capitalize">{u.role}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="sm">Edit</Button>
-                      <Button variant="destructive" size="sm">Remove</Button>
+                      <Button variant="secondary" size="sm">View</Button>
+                      <Button variant="destructive" size="sm">Suspend</Button>
+                      <Button variant="outline" size="sm">Promote</Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -48,3 +53,4 @@ export default function AdminUsersPage() {
     </div>
   )
 }
+
