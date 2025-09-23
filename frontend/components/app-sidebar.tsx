@@ -1,176 +1,41 @@
 "use client"
 
-import type * as React from "react"
+import { useState, useEffect } from "react"
 import {
-  AudioWaveform,
-  BookOpen,
-  Command,
   Frame,
-  GalleryVerticalEnd,
   Map,
   PieChart,
-  Settings2,
-  LayoutDashboard,
-  Swords,
-  MessageSquare,
-  Globe,
-  Bell,
-  Folder,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarHeader, SidebarRail } from "@/components/ui/sidebar"
+import { getUserRole } from "@/lib/getUserRole"
+import { roleMenus } from "@/lib/menuConfig"
 
-// This is sample data.
-const data = {
-  user: {
+type UserRole = 'student' | 'mentor' | 'organization' | 'admin'
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [role, setRole] = useState<UserRole>("student")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [user, setUser] = useState({
     name: "shadcn",
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: LayoutDashboard,
-    },
-    {
-      title: "Challenges",
-      url: "#",
-      icon: Swords,
-      isActive: true,
-      items: [
-        {
-          title: "Browse Challenges",
-          url: "#",
-        },
-        {
-          title: "Submit Challenge",
-          url: "#",
-        },
-        {
-          title: "My Challenges",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Collaboration",
-      url: "#",
-      icon: MessageSquare,
-      items: [
-        {
-          title: "Chat",
-          url: "#",
-        },
-        {
-          title: "Discussion Forums",
-          url: "#",
-        },
-        {
-          title: "Resource Sharing",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: Folder,
-      items: [
-        {
-          title: "Active Projects",
-          url: "#",
-        },
-        {
-          title: "Submitted Solutions",
-          url: "#",
-        },
-        {
-          title: "Project Management Tools",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Admin",
-      url: "/admin",
-      icon: Settings2,
-      items: [
-        {
-          title: "Overview",
-          url: "/admin",
-        },
-        {
-          title: "Users",
-          url: "/admin/users",
-        },
-        {
-          title: "Challenges",
-          url: "/admin/challenges",
-        },
-      ],
-    },
-    {
-      title: "Global Feed",
-      url: "#",
-      icon: Globe,
-    },
-    {
-      title: "Learning Hub",
-      url: "#",
-      icon: BookOpen,
-    },
-    {
-      title: "Notifications",
-      url: "#",
-      icon: Bell,
-    },
-  ],
-  projects: [
+  })
+
+  useEffect(() => {
+    const updateRole = async () => {
+      const newRole = await getUserRole()
+      setRole(newRole)
+    }
+    updateRole()
+  }, [])
+
+  const navMain = roleMenus[role]
+
+  const projects = [
     {
       name: "Design Engineering",
       url: "#",
@@ -186,22 +51,17 @@ const data = {
       url: "#",
       icon: Map,
     },
-  ],
-}
+  ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <NavUser user={user} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMain} />
+        <NavProjects projects={projects} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

@@ -28,7 +28,7 @@ export default function ProfilePage() {
   const { user, setRole } = useMockUser();
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-10 space-y-6">
       {/* Header: Profile card and role switcher (mock) */}
       <div className="flex flex-col gap-4">
         <ProfileCard

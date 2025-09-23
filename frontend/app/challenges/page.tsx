@@ -11,7 +11,7 @@ const mockChallenges = [
 
 export default function ChallengesPage() {
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-10 space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Challenges</h1>
         <p className="text-muted-foreground">Explore active, upcoming, and completed challenges.</p>

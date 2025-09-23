@@ -38,7 +38,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
   if (!team) return notFound();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-10 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{team.name}</h1>
