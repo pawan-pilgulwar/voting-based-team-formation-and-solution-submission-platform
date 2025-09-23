@@ -51,12 +51,12 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboard,
     },
     {
       title: "Challenges",
-      url: "#",
+      url: "/challenges",
       icon: Swords,
       isActive: true,
       items: [
@@ -95,7 +95,7 @@ const data = {
     },
     {
       title: "Projects",
-      url: "#",
+      url: "/projects",
       icon: Folder,
       items: [
         {
