@@ -29,7 +29,7 @@ export function TopNav() {
         <Link href="/">
           <div className="relative flex justify-center items-center">
             <Image src="/logo.png" alt="Logo" width={40} height={40} />
-            <h1 className="text-lg font-bold pl-2">Student Collaboration</h1>
+            <h1 className="text-lg font-bold pl-2">TeamForge</h1>
             {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" /> */}
             {/* <Input placeholder="Search..." className="pl-10 bg-background/50 border-border/50 focus:bg-background" /> */}
           </div>
