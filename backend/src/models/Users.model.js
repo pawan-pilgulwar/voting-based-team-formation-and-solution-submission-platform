@@ -8,6 +8,42 @@ const SocialLinksSchema = new Schema({
   website: { type: String }
 }, { _id: false });
 
+
+// Student, Mentor, OrgAdmin, SuperAdmin will extend tiis
+const StudentSchema = new Schema({
+  year: { type: Number },        // e.g., 2nd year
+  branch: { type: String },      // e.g., "CSE"
+  enrollmentId: { type: String } // optional unique student id
+});
+export const Student = User.discriminator("student", StudentSchema);
+
+
+const OrgAdminSchema = new Schema({
+  organizationName: { type: String, required: true },
+  designation: { type: String }, // e.g., "Coordinator"
+  managedChallenges: [{ type: Schema.Types.ObjectId, ref: "Problem" }]
+});
+export const OrgAdmin = User.discriminator("orgAdmin", OrgAdminSchema);
+
+
+const MentorSchema = new Schema({
+  expertise: [{ type: String }],  // e.g., ["AI", "Web Dev"]
+  availability: { type: String }, // e.g., "Weekends"
+  mentees: [{ type: Schema.Types.ObjectId, ref: "User" }]
+});
+export const Mentor = User.discriminator("mentor", MentorSchema);
+
+
+const SuperAdminSchema = new Schema({
+  permissions: [{ type: String }], // e.g., ["manage_users", "delete_problems"]
+  systemLogs: [{ type: String }]   // track admin actions if needed
+});
+export const SuperAdmin = User.discriminator("superAdmin", SuperAdminSchema);
+
+
+
+// Base User Schema
+
 const UserSchema = new Schema({
   name: { 
     type: String, 
@@ -96,7 +132,6 @@ UserSchema.pre("save", async function (next) {
 
   next();
 })
-
 
 
 UserSchema.methods.isPasswordCorrect = async function (password) {
