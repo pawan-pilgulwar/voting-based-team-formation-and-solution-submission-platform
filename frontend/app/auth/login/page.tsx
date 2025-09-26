@@ -27,23 +27,24 @@ const Page = () => {
       };
 
       const res = await axios.post(
-        `${process.env.BACKEND_URL}/api/v1/users/login`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/login`,
         body,
         {
           headers: {
             "Content-Type": "application/json",
           },
+          withCredentials: true,
         }
       );
 
       if (!res.status.toString().startsWith("2")) {
         throw new Error("Failed to fetch user");
       }
-
+      
       const data = res.data;
-      console.log(data);
+      console.log(data.data.tokens);
     } catch (error) {
-      console.error(error);
+      console.log(error);
     }
   };
 
