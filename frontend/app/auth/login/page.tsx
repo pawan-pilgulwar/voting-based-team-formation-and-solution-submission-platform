@@ -15,8 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const Page = () => {
+  const router = useRouter();
+  const { setUser, fetchUser } = useAuth()
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleSubmit = async () => {
@@ -40,9 +44,12 @@ const Page = () => {
       if (!res.status.toString().startsWith("2")) {
         throw new Error("Failed to fetch user");
       }
-      
-      const data = res.data;
-      console.log(data.data.tokens);
+
+      if (res.status === 200) {
+        setUser(res.data.user); // <-- update context immediately
+        fetchUser()
+        router.push("/dashboard");
+      }
     } catch (error) {
       console.log(error);
     }

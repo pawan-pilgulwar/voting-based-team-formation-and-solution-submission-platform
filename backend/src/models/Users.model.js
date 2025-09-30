@@ -35,12 +35,10 @@ const UserSchema = new Schema({
   },
   role: { 
     type: String, 
+    required: true,
     enum: ['student','mentor','orgAdmin','superAdmin'], 
     default: 'student' 
   },
-  skills: [{ 
-    type: String
-  }], // e.g. ["react","ml","iot"]
   bio: { 
     type: String, 
     maxlength: 1000 
@@ -63,9 +61,6 @@ const UserSchema = new Schema({
     type: Date 
   },
 
-  // quick lookups
-  teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
-  assignedProblems: [{ type: Schema.Types.ObjectId, ref: "Problem" }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   refreshToken: { type: String }, // for JWT refresh token
@@ -107,7 +102,8 @@ UserSchema.methods.generateAccessToken = function() {
   // Short-lived access token
   return jwt.sign({
     _id: this._id,
-    username: this.username
+    username: this.username,
+    email: this.email
   }, 
   process.env.ACCESS_TOKEN_SECRET, 
   { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
@@ -129,9 +125,13 @@ UserSchema.methods.generateRefereshToken = function() {
 
 // Student, Mentor, OrgAdmin, SuperAdmin will extend tiis
 const StudentSchema = new Schema({
+  gender: { type: String, enum: ["male", "female", "other"], required: true },
   year: { type: Number },        // e.g., 2nd year
   branch: { type: String },      // e.g., "CSE"
-  enrollmentId: { type: String } // optional unique student id
+  enrollmentId: { type: String }, // optional unique student id
+  skills: [{ type: String }], // e.g. ["react","ml","iot"]
+  teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
+  preferredTeamRoles: [{ type: String }],
 });
 
 
@@ -143,9 +143,12 @@ const OrgAdminSchema = new Schema({
 
 
 const MentorSchema = new Schema({
+  gender: { type: String, enum: ["male", "female", "other"], required: true },
   expertise: [{ type: String }],  // e.g., ["AI", "Web Dev"]
   availability: { type: String }, // e.g., "Weekends"
-  mentees: [{ type: Schema.Types.ObjectId, ref: "User" }]
+  mentees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
+  skills: [{ type: String }], // e.g. ["react","ml","iot"]
 });
 
 
