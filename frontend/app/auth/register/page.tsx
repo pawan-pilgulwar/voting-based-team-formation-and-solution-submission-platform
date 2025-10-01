@@ -22,9 +22,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const [role, setRole] = useState("");
+  const { setUser } = useAuth();
+  const router = useRouter();
 
   // Common fields
   const [common, setCommon] = useState({
@@ -56,40 +60,38 @@ const Page = () => {
     designation: "",
   });
 
-
   // // Common input handler
-  const handleCommonChange = (e : React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value, type, checked} = e.target
-    setCommon(prev => ({
-      ...prev, [id]: type === "checkbox" ? checked : value,
+  const handleCommonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value, type, checked } = e.target;
+    setCommon((prev) => ({
+      ...prev,
+      [id]: type === "checkbox" ? checked : value,
     }));
-  }
+  };
 
   // Role-specific input handler
   const handleRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
 
     if (role === "student") {
-      setStudent(prev => ({ ...prev, [id]: value }));
+      setStudent((prev) => ({ ...prev, [id]: value }));
     } else if (role === "mentor") {
-      setMentor(prev => ({ ...prev, [id]: value }));
+      setMentor((prev) => ({ ...prev, [id]: value }));
     } else if (role === "orgAdmin") {
-      setOrgAdmin(prev => ({ ...prev, [id]: value }));
+      setOrgAdmin((prev) => ({ ...prev, [id]: value }));
     }
   };
 
   // Submit
   const handleSubmit = async () => {
     try {
-    const payload = {
-      ...common,
-      role,
-      ...(role === "student" ? student : {}),
-      ...(role === "mentor" ? mentor : {}),
-      ...(role === "orgAdmin" ? orgAdmin : {}),
-    };
-    console.log("Submitting data:", payload);
-    // Call your API here
+      const payload = {
+        ...common,
+        role,
+        ...(role === "student" ? student : {}),
+        ...(role === "mentor" ? mentor : {}),
+        ...(role === "orgAdmin" ? orgAdmin : {}),
+      };
 
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/register`,
@@ -105,7 +107,11 @@ const Page = () => {
       if (!res.status.toString().startsWith("2")) {
         throw new Error("Failed to fetch user");
       }
-      
+
+      if (res.status === 200) {
+        setUser(res.data.user); // <-- update context immediately
+        router.push("/dashboard");
+      }
     } catch (error) {
       console.log(error);
     }
@@ -124,17 +130,35 @@ const Page = () => {
             {/* Basic Info */}
             <div className="grid gap-2">
               <Label htmlFor="name">Full name</Label>
-              <Input id="name" type="text" onChange={handleCommonChange} placeholder="Jane Doe" required />
+              <Input
+                id="name"
+                type="text"
+                onChange={handleCommonChange}
+                placeholder="Jane Doe"
+                required
+              />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" onChange={handleCommonChange} placeholder="m@example.com" required />
+              <Input
+                id="email"
+                type="email"
+                onChange={handleCommonChange}
+                placeholder="m@example.com"
+                required
+              />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="username">Username</Label>
-              <Input id="username" type="text" onChange={handleCommonChange} placeholder="jane_doe" required />
+              <Input
+                id="username"
+                type="text"
+                onChange={handleCommonChange}
+                placeholder="jane_doe"
+                required
+              />
             </div>
 
             {/* Role Selection */}
@@ -157,7 +181,11 @@ const Page = () => {
               <>
                 <div className="grid gap-2">
                   <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(val) => setStudent(prev => ({ ...prev, gender: val }))}>
+                  <Select
+                    onValueChange={(val) =>
+                      setStudent((prev) => ({ ...prev, gender: val }))
+                    }
+                  >
                     <SelectTrigger id="gender" className="w-full">
                       <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
@@ -170,18 +198,37 @@ const Page = () => {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="year">Year</Label>
-                  <Input id="year" type="number"onChange={handleRoleChange} min={1} max={5} placeholder="2" />
+                  <Input
+                    id="year"
+                    type="number"
+                    onChange={handleRoleChange}
+                    min={1}
+                    max={5}
+                    placeholder="2"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="branch">Branch</Label>
-                  <Input id="branch" type="text"onChange={handleRoleChange} placeholder="CSE" />
+                  <Input
+                    id="branch"
+                    type="text"
+                    onChange={handleRoleChange}
+                    placeholder="CSE"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="skills">Skills (comma separated)</Label>
-                  <Input id="skills" type="text"onChange={handleRoleChange} placeholder="react, ml, iot" />
+                  <Input
+                    id="skills"
+                    type="text"
+                    onChange={handleRoleChange}
+                    placeholder="react, ml, iot"
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="preferredTeamRoles">Preferred Team Roles</Label>
+                  <Label htmlFor="preferredTeamRoles">
+                    Preferred Team Roles
+                  </Label>
                   <Input
                     id="preferredTeamRoles"
                     type="text"
@@ -196,7 +243,11 @@ const Page = () => {
               <>
                 <div className="grid gap-2">
                   <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(val) => setMentor(prev => ({ ...prev, gender: val }))}>
+                  <Select
+                    onValueChange={(val) =>
+                      setMentor((prev) => ({ ...prev, gender: val }))
+                    }
+                  >
                     <SelectTrigger id="gender" className="w-full">
                       <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
@@ -208,12 +259,24 @@ const Page = () => {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="skills">Skills / Expertise (comma separated)</Label>
-                  <Input id="skills" type="text" onChange={handleRoleChange} placeholder="AI, Web Dev" />
+                  <Label htmlFor="skills">
+                    Skills / Expertise (comma separated)
+                  </Label>
+                  <Input
+                    id="skills"
+                    type="text"
+                    onChange={handleRoleChange}
+                    placeholder="AI, Web Dev"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="availability">Availability</Label>
-                  <Input id="availability" type="text" onChange={handleRoleChange} placeholder="Weekends" />
+                  <Input
+                    id="availability"
+                    type="text"
+                    onChange={handleRoleChange}
+                    placeholder="Weekends"
+                  />
                 </div>
               </>
             )}
@@ -222,11 +285,21 @@ const Page = () => {
               <>
                 <div className="grid gap-2">
                   <Label htmlFor="organizationName">Organization Name</Label>
-                  <Input id="organizationName" type="text" onChange={handleRoleChange} placeholder="ABC Org" />
+                  <Input
+                    id="organizationName"
+                    type="text"
+                    onChange={handleRoleChange}
+                    placeholder="ABC Org"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="designation">Designation</Label>
-                  <Input id="designation" type="text" onChange={handleRoleChange} placeholder="Coordinator" />
+                  <Input
+                    id="designation"
+                    type="text"
+                    onChange={handleRoleChange}
+                    placeholder="Coordinator"
+                  />
                 </div>
               </>
             )}
@@ -234,16 +307,30 @@ const Page = () => {
             {/* Common fields */}
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" onChange={handleCommonChange} required />
+              <Input
+                id="password"
+                type="password"
+                onChange={handleCommonChange}
+                required
+              />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="confirmPassword">Confirm password</Label>
-              <Input id="confirmPassword" onChange={handleCommonChange} type="password" required />
+              <Input
+                id="confirmPassword"
+                onChange={handleCommonChange}
+                type="password"
+                required
+              />
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox id="terms" onChange={(e: any) => handleCommonChange(e)} required />
+              <Checkbox
+                id="terms"
+                onChange={(e: any) => handleCommonChange(e)}
+                required
+              />
               <Label htmlFor="terms" className="text-sm text-muted-foreground">
                 I agree to the terms and privacy policy
               </Label>

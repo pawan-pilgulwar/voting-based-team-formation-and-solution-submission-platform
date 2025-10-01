@@ -119,8 +119,28 @@ const registerUser = asyncHandler(async (req, res) => {
         if (!createdUser) {
             throw new ApiError(500, "Something went wrong while registering user");
         }
+
+        const tokens = await generateAccessAndRefereshToken(createdUser._id);
+
+        const loggedInUser = await User.findById(createdUser._id).select("-password -refereshToken");
+
+        const options = {
+            httpOnly: true,
+            sameSite: "none",  // allow cross-site
+            path: "/",         // send to all routes
+            secure: process.env.NODE_ENV === "production", // Set to true in production
+        }
     
-        return res.status(201).json(new ApiResponse(200, createdUser, "User registered successfully"));
+        return res
+            .cookie("refreshToken", tokens.refreshToken, options)
+            .cookie("accessToken", tokens.accessToken, options)
+            .status(201)
+            .json(new ApiResponse(
+                200, 
+                { user: loggedInUser, tokens }, 
+                "User registered and logged in successfully"
+            ));
+            
     } catch (error) {
         console.error("User Creation failed");
 
@@ -165,8 +185,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
+        sameSite: "none",  // allow cross-site
+        path: "/",         // send to all routes
         secure: process.env.NODE_ENV === "production", // Set to true in production
-        sameSite: "lax",
     }
 
     return res
@@ -192,8 +213,9 @@ const logoutUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
+        sameSite: "none",  // allow cross-site
+        path: "/",         // send to all routes
         secure: process.env.NODE_ENV === "production", // Set to true in production
-        sameSite: "lax",
     }
 
     return res
@@ -203,18 +225,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json( new ApiResponse(200, {}, "User loggout successfully"))
 
 })
-
-// const findUser = asyncHandler(async (req, res) => {
-//   try {
-//     const token = req.cookies.accessToken; // read HTTP-only cookie
-//     if (!token) return res.status(401).json({ message: "Not logged in" });
-
-//     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-//     res.json({ user: { id: decoded._id, username: decoded.username, role: decoded.role } });
-//   } catch (err) {
-//     res.status(401).json({ message: "Invalid token" });
-//   }
-// })
 
 const getUser = asyncHandler(async (req, res) => {
   try {
@@ -267,8 +277,9 @@ const refershAccessToken = asyncHandler(async (req, res) => {
 
         const options = {
             httpOnly: true,
+            sameSite: "none",  // allow cross-site
+            path: "/",         // send to all routes
             secure: process.env.NODE_ENV === "production", // Set to true in production
-            sameSite: "lax",
         }
 
         const {accessToken, refreshToken: newRefereshToken} = await generateAccessAndRefereshToken(user._id)

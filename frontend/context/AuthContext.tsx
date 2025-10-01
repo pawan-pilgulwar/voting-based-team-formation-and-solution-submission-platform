@@ -48,8 +48,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      console.log(res)
-
       if (res.data.user) {
         setUser(res.data.user);
       } else {
