@@ -3,6 +3,8 @@ import { Router } from "express";
 import { registerUser, loginUser, logoutUser, getUser } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { validate } from "../middlewares/validate.middleware.js";
+import { registerSchema, loginSchema } from "../validations/user.validation.js";
 
 
 const router = Router()
@@ -17,9 +19,10 @@ router.route("/register").post(
             maxCount: 1 
         }
     ]),
+    validate(registerSchema),
     registerUser)
     
-router.route("/login").post(loginUser)
+router.route("/login").post(validate(loginSchema), loginUser)
 
 // router.get("/finduser",findUser);
 

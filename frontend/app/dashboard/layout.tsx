@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 
 export default function DashboardLayout({
@@ -13,7 +15,18 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   // Lightweight role awareness for header and Home link
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Guard: if not authenticated redirect to login
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/auth/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading) return null;
+  if (!user) return null;
   const role =
     user?.role ||
     ("student" as "student" | "mentor" | "organization" | "admin");

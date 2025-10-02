@@ -19,6 +19,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   handleLogout: () => void;
   fetchUser: () => Promise<void>;
 }
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   setUser: () => {},
+  setLoading: () => {},
   handleLogout: () => {},
   fetchUser: async () => {},
 });
@@ -70,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
         withCredentials: true,
       })
-      fetchUser()
+      await fetchUser()
 
     } catch (error) {
       console.log(error)
@@ -85,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, setUser, handleLogout, fetchUser }}>
+    <AuthContext.Provider value={{ user, loading, setUser, handleLogout, fetchUser, setLoading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -122,23 +122,22 @@ const registerUser = asyncHandler(async (req, res) => {
 
         const tokens = await generateAccessAndRefereshToken(createdUser._id);
 
-        const loggedInUser = await User.findById(createdUser._id).select("-password -refereshToken");
-
+        const isProd = process.env.NODE_ENV === "production";
         const options = {
             httpOnly: true,
-            sameSite: "none",  // allow cross-site
-            path: "/",         // send to all routes
-            secure: process.env.NODE_ENV === "production", // Set to true in production
+            // In production we need cross-site cookies for frontend on different origin
+            sameSite: isProd ? "none" : "lax",
+            path: "/",
+            secure: isProd,
         }
-    
+
         return res
             .cookie("refreshToken", tokens.refreshToken, options)
             .cookie("accessToken", tokens.accessToken, options)
-            .status(201)
             .json(new ApiResponse(
                 200, 
-                { user: loggedInUser, tokens }, 
-                "User registered and logged in successfully"
+                { user: createdUser, tokens }, 
+                "User logged in successfully"
             ));
             
     } catch (error) {
@@ -159,7 +158,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
 const loginUser = asyncHandler(async (req, res) => {
-    const { email, username, password} = req.body;
+    const { email, password} = req.body;
     
     // Validation
     if (!email) {
@@ -183,11 +182,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const loggedInUser = await User.findById(user._id).select("-password -refereshToken");
 
+    const isProd = process.env.NODE_ENV === "production";
     const options = {
         httpOnly: true,
-        sameSite: "none",  // allow cross-site
-        path: "/",         // send to all routes
-        secure: process.env.NODE_ENV === "production", // Set to true in production
+        // In production we need cross-site cookies for frontend on different origin
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        secure: isProd,
     }
 
     return res
@@ -211,18 +212,18 @@ const logoutUser = asyncHandler(async (req, res) => {
         {new: true}
     )
 
+    const isProd = process.env.NODE_ENV === "production";
     const options = {
         httpOnly: true,
-        sameSite: "none",  // allow cross-site
-        path: "/",         // send to all routes
-        secure: process.env.NODE_ENV === "production", // Set to true in production
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        secure: isProd,
     }
 
     return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json( new ApiResponse(200, {}, "User loggout successfully"))
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json( new ApiResponse(200, {}, "User loggout successfully"))
 
 })
 
@@ -271,15 +272,16 @@ const refershAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Invalid referesh token")
         } 
 
-        if (incomingRefereshToken !== User.refreshToken) {
+        if (incomingRefereshToken !== user.refreshToken) {
             throw new ApiError(401, "Invalid referesh token")
         }
 
+        const isProd = process.env.NODE_ENV === "production";
         const options = {
             httpOnly: true,
-            sameSite: "none",  // allow cross-site
-            path: "/",         // send to all routes
-            secure: process.env.NODE_ENV === "production", // Set to true in production
+            sameSite: isProd ? "none" : "lax",
+            path: "/",
+            secure: isProd,
         }
 
         const {accessToken, refreshToken: newRefereshToken} = await generateAccessAndRefereshToken(user._id)
@@ -287,13 +289,11 @@ const refershAccessToken = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .cookie("accessToken", accessToken, options)
-        .cookie("refereshToken", newRefereshToken, options)
+        .cookie("refreshToken", newRefereshToken, options)
         .json(
             new ApiResponse(
                 200, 
-                {accessToken, 
-                    refereshToken: newRefereshToken
-                }, 
+                { accessToken, refreshToken: newRefereshToken }, 
                 "Access Token refereshed successfully"
             ))
 
