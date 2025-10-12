@@ -1,62 +1,253 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ProfileCard, UserRole } from "@/components/ui/ProfileCard";
+import { useAuth } from "@/context/AuthContext";
+import { ProfileCard } from "@/components/ui/ProfileCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-function useMockUser() {
-  // In a real app, replace with session/auth context
-  const [role, setRole] = useState<UserRole>("student");
-  const user = useMemo(
-    () => ({
-      name: "Alex Johnson",
-      email: "alex.johnson@example.com",
-      role,
-      avatarUrl: undefined as string | undefined,
-    }),
-    [role]
-  );
-  return { user, setRole };
-}
+type UiRole = "student" | "mentor" | "organization" | "admin";
 
 export default function ProfilePage() {
-  const { user, setRole } = useMockUser();
+  const { user, updateProfile, changePassword, fetchUser } = useAuth();
+  const uiRole: UiRole = useMemo(() => {
+    if (!user?.role) return "student";
+    switch (user.role) {
+      case "mentor":
+        return "mentor";
+      case "orgAdmin":
+        return "organization";
+      case "superAdmin":
+        return "admin";
+      case "student":
+      default:
+        return "student";
+    }
+  }, [user?.role]);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    name: user?.name || "",
+    username: user?.username || "",
+    email: user?.email || "",
+    institution: user?.institution || "",
+    bio: user?.bio || "",
+    // role specific
+    gender: user?.gender || "",
+    year: user?.year ?? ("" as any),
+    branch: user?.branch || "",
+    skills: (user?.skills || []).join(", "),
+    preferredTeamRoles: (user as any)?.preferredTeamRoles?.join(", ") || "",
+    expertise: (user?.expertise || []).join(", "),
+    availability: user?.availability || "",
+    organizationName: user?.organizationName || "",
+    designation: user?.designation || "",
+  });
+
+  const [pwdForm, setPwdForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [avatarFile, setAvatarFile] = useState<File | undefined>(undefined);
+  const [coverFile, setCoverFile] = useState<File | undefined>(undefined);
+
+  const onSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const payload: any = {
+        name: form.name,
+        institution: form.institution,
+        bio: form.bio,
+      };
+      if (user?.role === "student") {
+        if (form.gender) payload.gender = form.gender;
+        if (form.year) payload.year = Number(form.year);
+        if (form.branch) payload.branch = form.branch;
+        if (form.skills) payload.skills = form.skills.split(",").map((s) => s.trim()).filter(Boolean);
+        if (form.preferredTeamRoles) payload.preferredTeamRoles = form.preferredTeamRoles.split(",").map((s: any) => s.trim()).filter(Boolean);
+      } else if (user?.role === "mentor") {
+        if (form.gender) payload.gender = form.gender;
+        if (form.expertise) payload.expertise = form.expertise.split(",").map((s: any) => s.trim()).filter(Boolean);
+        if (form.availability) payload.availability = form.availability;
+        if (form.skills) payload.skills = form.skills.split(",").map((s: any) => s.trim()).filter(Boolean);
+      } else if (user?.role === "orgAdmin") {
+        if (form.organizationName) payload.organizationName = form.organizationName;
+        if (form.designation) payload.designation = form.designation;
+      }
+      await updateProfile(payload, { avatar: avatarFile, coverImage: coverFile });
+      await fetchUser();
+      setEditOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onChangePassword = async () => {
+    setPwdSaving(true);
+    try {
+      await changePassword(pwdForm);
+      setPwdOpen(false);
+      setPwdForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
+  if (!user) return null;
 
   return (
     <div className="max-w-6xl mx-10 space-y-6">
-      {/* Header: Profile card and role switcher (mock) */}
       <div className="flex flex-col gap-4">
         <ProfileCard
           name={user.name}
           email={user.email}
-          role={user.role}
-          onAvatarUpload={(file) => {
-            // mock upload
-            console.log("Avatar selected:", file.name);
-          }}
+          role={uiRole}
         />
-        <div className="flex items-center gap-3">
-          <Label htmlFor="role">Preview as role</Label>
-          <Select value={user.role} onValueChange={(v) => setRole(v as UserRole)}>
-            <SelectTrigger id="role" className="w-[200px]">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="student">Student</SelectItem>
-              <SelectItem value="mentor">Mentor</SelectItem>
-              <SelectItem value="organization">Organization</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex gap-3">
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogTrigger asChild>
+              <Button>Edit Profile</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Profile</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Username</Label>
+                  <Input value={form.username} disabled />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Email</Label>
+                  <Input value={form.email} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label>Institution</Label>
+                  <Input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Bio</Label>
+                  <Input value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Avatar</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0])} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cover Image</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0])} />
+                </div>
+
+                {user.role === "student" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Gender</Label>
+                      <Input placeholder="male | female | other" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Year</Label>
+                      <Input type="number" value={form.year as any} onChange={(e) => setForm({ ...form, year: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Branch</Label>
+                      <Input value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Skills (comma separated)</Label>
+                      <Input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Preferred Team Roles (comma separated)</Label>
+                      <Input value={form.preferredTeamRoles} onChange={(e) => setForm({ ...form, preferredTeamRoles: e.target.value })} />
+                    </div>
+                  </>
+                )}
+
+                {user.role === "mentor" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Gender</Label>
+                      <Input placeholder="male | female | other" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Expertise (comma separated)</Label>
+                      <Input value={form.expertise} onChange={(e) => setForm({ ...form, expertise: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Availability</Label>
+                      <Input value={form.availability} onChange={(e) => setForm({ ...form, availability: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Skills (comma separated)</Label>
+                      <Input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} />
+                    </div>
+                  </>
+                )}
+
+                {user.role === "orgAdmin" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Organization Name</Label>
+                      <Input value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Designation</Label>
+                      <Input value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                <Button onClick={onSaveProfile} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={pwdOpen} onOpenChange={setPwdOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Change Password</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3">
+                <div className="space-y-2">
+                  <Label>Current Password</Label>
+                  <Input type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>New Password</Label>
+                  <Input type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirm Password</Label>
+                  <Input type="password" value={pwdForm.confirmPassword} onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setPwdOpen(false)}>Cancel</Button>
+                <Button onClick={onChangePassword} disabled={pwdSaving}>{pwdSaving ? "Updating..." : "Update"}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {/* Shared editable details (mock read-only for email) */}
       <Card>
         <CardHeader>
           <CardTitle>Profile Details</CardTitle>
@@ -70,191 +261,95 @@ export default function ProfilePage() {
             <Label>Email</Label>
             <Input value={user.email} readOnly />
           </div>
+          {user.institution && (
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Institution</Label>
+              <Input value={user.institution} readOnly />
+            </div>
+          )}
+          {user.bio && (
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Bio</Label>
+              <Input value={user.bio} readOnly />
+            </div>
+          )}
+
+          {user.role === "student" && (
+            <>
+              {user.gender && (
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Input value={user.gender} readOnly />
+                </div>
+              )}
+              {typeof user.year !== "undefined" && (
+                <div className="space-y-2">
+                  <Label>Year</Label>
+                  <Input value={String(user.year)} readOnly />
+                </div>
+              )}
+              {user.branch && (
+                <div className="space-y-2">
+                  <Label>Branch</Label>
+                  <Input value={user.branch} readOnly />
+                </div>
+              )}
+              {(user.skills && user.skills.length > 0) && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Skills</Label>
+                  <Input value={user.skills.join(", ")} readOnly />
+                </div>
+              )}
+            </>
+          )}
+
+          {user.role === "mentor" && (
+            <>
+              {user.gender && (
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Input value={user.gender} readOnly />
+                </div>
+              )}
+              {(user.expertise && user.expertise.length > 0) && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Expertise</Label>
+                  <Input value={user.expertise.join(", ")} readOnly />
+                </div>
+              )}
+              {user.availability && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Availability</Label>
+                  <Input value={user.availability} readOnly />
+                </div>
+              )}
+              {(user.skills && user.skills.length > 0) && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Skills</Label>
+                  <Input value={user.skills.join(", ")} readOnly />
+                </div>
+              )}
+            </>
+          )}
+
+          {user.role === "orgAdmin" && (
+            <>
+              {user.organizationName && (
+                <div className="space-y-2">
+                  <Label>Organization Name</Label>
+                  <Input value={user.organizationName} readOnly />
+                </div>
+              )}
+              {user.designation && (
+                <div className="space-y-2">
+                  <Label>Designation</Label>
+                  <Input value={user.designation} readOnly />
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
-
-      {/* Role specific sections */}
-      {user.role === "student" && <StudentSections />}
-      {user.role === "mentor" && <MentorSections />}
-      {user.role === "organization" && <OrganizationSections />}
-      {user.role === "admin" && <AdminSections />}
-    </div>
-  );
-}
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function StudentSections() {
-  const enrolledChallenges = [
-    { id: "c1", title: "AI for Healthcare", status: "Active" },
-    { id: "c2", title: "Sustainability Hack", status: "Upcoming" },
-  ];
-  const teams = [
-    { id: "t1", name: "Health Innovators" },
-    { id: "t2", name: "GreenTech Squad" },
-  ];
-  const projects = [
-    { id: "p1", title: "Smart Triage App" },
-    { id: "p2", title: "Carbon Tracker" },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <SectionCard title="Enrolled Challenges">
-        <ul className="space-y-2">
-          {enrolledChallenges.map((c) => (
-            <li key={c.id} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{c.title}</p>
-                <p className="text-sm text-muted-foreground">{c.status}</p>
-              </div>
-              <Link href={`/challenges/${c.id}`}>
-                <Button variant="outline" size="sm">View</Button>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-      <SectionCard title="My Teams">
-        <ul className="space-y-2">
-          {teams.map((t) => (
-            <li key={t.id} className="flex items-center justify-between">
-              <p className="font-medium">{t.name}</p>
-              <div className="flex gap-2">
-                <Link href={`/teams/${t.id}`}>
-                  <Button variant="outline" size="sm">Open</Button>
-                </Link>
-                <Link href={`/chat/${t.id}`}>
-                  <Button size="sm">Chat</Button>
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-      <SectionCard title="My Projects">
-        <ul className="space-y-2">
-          {projects.map((p) => (
-            <li key={p.id} className="flex items-center justify-between">
-              <p className="font-medium">{p.title}</p>
-              <Link href={`/projects/${p.id}`}>
-                <Button variant="outline" size="sm">Details</Button>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-    </div>
-  );
-}
-
-function MentorSections() {
-  const assigned = [
-    { id: "c3", title: "FinTech Challenge", type: "Challenge" },
-    { id: "t9", title: "Quant Ninjas", type: "Team" },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <SectionCard title="Assigned Challenges/Teams">
-        <ul className="space-y-2">
-          {assigned.map((a) => (
-            <li key={a.id} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{a.title}</p>
-                <p className="text-sm text-muted-foreground">{a.type}</p>
-              </div>
-              <Link href={a.type === "Team" ? `/teams/${a.id}` : `/challenges/${a.id}`}>
-                <Button variant="outline" size="sm">Open</Button>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-      <SectionCard title="Expertise / Skills">
-        <div className="space-y-3">
-          <Label htmlFor="skills">Skills (comma separated)</Label>
-          <Input id="skills" placeholder="e.g., React, Data Science, UX" />
-          <Button>Save</Button>
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function OrganizationSections() {
-  const hosted = [
-    { id: "c10", title: "Smart Cities Hackathon", status: "Active" },
-    { id: "c11", title: "EdTech Innovation", status: "Completed" },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <SectionCard title="Hosted Challenges">
-        <ul className="space-y-2">
-          {hosted.map((c) => (
-            <li key={c.id} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{c.title}</p>
-                <p className="text-sm text-muted-foreground">{c.status}</p>
-              </div>
-              <Link href={`/challenges/${c.id}`}>
-                <Button variant="outline" size="sm">Manage</Button>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-      <SectionCard title="Organization Details">
-        <div className="grid grid-cols-1 gap-3">
-          <div className="space-y-1">
-            <Label>Name</Label>
-            <Input placeholder="Org Name" defaultValue="Global Student Network" />
-          </div>
-          <div className="space-y-1">
-            <Label>Website</Label>
-            <Input placeholder="https://example.org" defaultValue="https://gsn.example.org" />
-          </div>
-          <div className="space-y-1">
-            <Label>Contact Email</Label>
-            <Input placeholder="contact@example.org" defaultValue="contact@gsn.org" />
-          </div>
-          <div>
-            <Button>Save</Button>
-          </div>
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function AdminSections() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <SectionCard title="Admin Overview">
-        <p className="text-sm text-muted-foreground">
-          You are logged in as an admin. Manage users, challenges, and platform settings.
-        </p>
-      </SectionCard>
-      <SectionCard title="Quick Actions">
-        <div className="flex flex-wrap gap-3">
-          <Link href="/admin">
-            <Button>Go to Admin Dashboard</Button>
-          </Link>
-          <Link href="/challenges">
-            <Button variant="outline">View Challenges</Button>
-          </Link>
-        </div>
-      </SectionCard>
     </div>
   );
 }

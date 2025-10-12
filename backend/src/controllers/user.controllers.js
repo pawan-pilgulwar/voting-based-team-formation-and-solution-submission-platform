@@ -1,9 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/Users.model.js";
+import { User, Student, Mentor, OrgAdmin } from "../models/Users.model.js";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 const generateAccessAndRefereshToken = async (userId) => {
     try {
@@ -22,6 +23,7 @@ const generateAccessAndRefereshToken = async (userId) => {
         throw new ApiError(500, "Something went wrong while generating access and refresh tokens");
     }
 }
+
 
 const registerUser = asyncHandler(async (req, res) => {
     const { username, email, password, name, role, gender } = req.body;
@@ -201,6 +203,7 @@ const loginUser = asyncHandler(async (req, res) => {
         ));
 })
 
+
 const logoutUser = asyncHandler(async (req, res) => {
     const user = await User.findByIdAndUpdate(
         req.user._id,
@@ -227,6 +230,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 })
 
+
 const getUser = asyncHandler(async (req, res) => {
   try {
     const userID = req.user._id; // JWT middleware should set req.id
@@ -244,14 +248,16 @@ const getUser = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({
-      success: true,
+    return res.json(new ApiResponse(
+      200,
       user,
-    });
+      "User fetched successfully"
+    ));
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    throw new ApiError(500, "Something went wrong while fetching user")
   }
 });
+
 
 const refershAccessToken = asyncHandler(async (req, res) => {
     const incomingRefereshToken = req.cookies.refreshToken
@@ -300,6 +306,124 @@ const refershAccessToken = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new ApiError(500, "Something went wrong while refereshing access token")
     }
-})
+});
 
-export { registerUser, loginUser, getUser, refershAccessToken, logoutUser };
+const updateUser = asyncHandler(async (req, res) => {
+    try {
+        const { name, bio, institution, gender, year, branch, skills, expertise, availability, organizationName, designation } = req.body;
+        const userId = req.user?._id;
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            throw new ApiError(400, "Invalid user ID");
+        }
+
+        let user = await User.findById(userId);
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+
+        // Upload files if provided
+        const avatarLocalPath = req.files?.avatar?.[0]?.path || "";
+        const coverLocalPath = req.files?.coverImage?.[0]?.path || "";
+
+        let uploadedAvatar = null;
+        let uploadedCover = null;
+        if (avatarLocalPath) {
+            uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
+        }
+        if (coverLocalPath) {
+            uploadedCover = await uploadOnCloudinary(coverLocalPath);
+        }
+
+        const updateFields = {};
+        if (name) updateFields.name = name;
+        if (bio) updateFields.bio = bio;
+        if (institution) updateFields.institution = institution;
+        if (uploadedAvatar?.url) updateFields.avatar = uploadedAvatar.url;
+        if (uploadedCover?.url) updateFields.coverImage = uploadedCover.url;
+
+        // Role-specific updates
+        if (user.role === 'student') {
+            const studentUpdate = {};
+            if (gender) studentUpdate.gender = gender;
+            if (year) studentUpdate.year = year;
+            if (branch) studentUpdate.branch = branch;
+            if (skills) {
+                studentUpdate.skills = Array.isArray(skills) ? skills : String(skills).split(',').map(s => s.trim()).filter(Boolean);
+            }
+            await Student.findOneAndUpdate({ _id: userId }, { $set: studentUpdate });
+        } else if (user.role === 'mentor') {
+            const mentorUpdate = {};
+            if (gender) mentorUpdate.gender = gender;
+            if (expertise) {
+                mentorUpdate.expertise = Array.isArray(expertise) ? expertise : String(expertise).split(',').map(e => e.trim()).filter(Boolean);
+            }
+            if (availability) mentorUpdate.availability = availability;
+            if (skills) {
+                mentorUpdate.skills = Array.isArray(skills) ? skills : String(skills).split(',').map(s => s.trim()).filter(Boolean);
+            }
+            await Mentor.findOneAndUpdate({ _id: userId }, { $set: mentorUpdate });
+        } else if (user.role === 'orgAdmin') {
+            const orgAdminUpdate = {};
+            if (organizationName) orgAdminUpdate.organizationName = organizationName;
+            if (designation) orgAdminUpdate.designation = designation;
+            await OrgAdmin.findOneAndUpdate({ _id: userId }, { $set: orgAdminUpdate });
+        }
+
+        // Save base user
+        if (Object.keys(updateFields).length > 0) {
+            user = await User.findByIdAndUpdate(
+                userId,
+                { $set: updateFields },
+                { new: true }
+            ).select('-password -refreshToken');
+        } else {
+            user = await User.findById(userId).select('-password -refreshToken');
+        }
+
+        return res.status(200).json(new ApiResponse(200, user, "User updated successfully"));
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while updating user");
+    }
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+        const userId = req.user?._id;
+        
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            throw new ApiError(400, "All fields are required");
+        }
+        
+        if (newPassword !== confirmPassword) {
+            throw new ApiError(400, "New password and confirm password do not match");
+        }
+        
+        if (newPassword === currentPassword) {
+            throw new ApiError(400, "New password must be different from current password");
+        }
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while changing password");
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(currentPassword);
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Current password is incorrect");
+    }
+
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Password changed successfully")
+    );
+});
+
+
+export { registerUser, loginUser, logoutUser, refershAccessToken, getUser, updateUser, changePassword };
