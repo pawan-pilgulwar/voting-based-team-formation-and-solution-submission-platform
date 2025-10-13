@@ -43,7 +43,7 @@ const Page = () => {
       username: z.string().min(3, { message: "Username is too short" }).toLowerCase(),
       password: z.string().min(6, { message: "Min 6 characters" }),
       confirmPassword: z.string().min(6, { message: "Min 6 characters" }),
-      role: z.enum(["student", "mentor", "orgAdmin", "superAdmin"], {
+      role: z.enum(["student", "mentor", "organization", "admin"], {
         errorMap: () => ({ message: "Select your role" }),
       }),
       gender: z.string().optional(),
@@ -134,7 +134,7 @@ const Page = () => {
         if (values.skills) fd.append("skills", values.skills);
         if (values.expertise) fd.append("expertise", values.expertise);
         if (values.availability) fd.append("availability", values.availability);
-      } else if (values.role === "orgAdmin") {
+      } else if (values.role === "organization") {
         if (values.organizationName) fd.append("organizationName", values.organizationName);
         if (values.designation) fd.append("designation", values.designation);
       }
@@ -222,7 +222,7 @@ const Page = () => {
                 <SelectContent>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="mentor">Mentor</SelectItem>
-                  <SelectItem value="orgAdmin">Organization</SelectItem>
+                  <SelectItem value="organization">Organization</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (
@@ -305,7 +305,7 @@ const Page = () => {
               </>
             )}
 
-            {role === "orgAdmin" && (
+            {role === "organization" && (
               <>
                 <div className="grid gap-2">
                   <Label htmlFor="organizationName">Organization Name</Label>

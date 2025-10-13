@@ -36,7 +36,7 @@ const UserSchema = new Schema({
   role: { 
     type: String, 
     required: true,
-    enum: ['student','mentor','orgAdmin','superAdmin'], 
+    enum: ['student','mentor','organization','admin'], 
     default: 'student' 
   },
   bio: { 
@@ -162,6 +162,6 @@ const SuperAdminSchema = new Schema({
 // exporting all users
 export const User = mongoose.model("User", UserSchema);
 export const Student = User.discriminator("student", StudentSchema);
-export const OrgAdmin = User.discriminator("orgAdmin", OrgAdminSchema);
+export const OrgAdmin = User.discriminator("organization", OrgAdminSchema);
 export const Mentor = User.discriminator("mentor", MentorSchema);
-export const SuperAdmin = User.discriminator("superAdmin", SuperAdminSchema);
+export const SuperAdmin = User.discriminator("admin", SuperAdminSchema);

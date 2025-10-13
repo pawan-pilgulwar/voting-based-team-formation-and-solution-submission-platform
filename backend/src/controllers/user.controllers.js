@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // Validate role and gender for specific roles
-    const allowedRoles = ["student", "mentor", "orgAdmin", "superAdmin"]
+    const allowedRoles = ["student", "mentor", "organization", "admin"]
     if (!allowedRoles.includes(role)) {
         throw new ApiError(400, "Invalid role provided")
     }
@@ -109,7 +109,7 @@ const registerUser = asyncHandler(async (req, res) => {
                 createPayload.skills = createPayload.expertise
             }
             if (body.availability) createPayload.availability = body.availability
-        } else if (role === "orgAdmin") {
+        } else if (role === "organization") {
             if (body.organizationName) createPayload.organizationName = body.organizationName
             if (body.designation) createPayload.designation = body.designation
         }
@@ -363,7 +363,7 @@ const updateUser = asyncHandler(async (req, res) => {
                 mentorUpdate.skills = Array.isArray(skills) ? skills : String(skills).split(',').map(s => s.trim()).filter(Boolean);
             }
             await Mentor.findOneAndUpdate({ _id: userId }, { $set: mentorUpdate });
-        } else if (user.role === 'orgAdmin') {
+        } else if (user.role === 'organization') {
             const orgAdminUpdate = {};
             if (organizationName) orgAdminUpdate.organizationName = organizationName;
             if (designation) orgAdminUpdate.designation = designation;

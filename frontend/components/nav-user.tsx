@@ -15,16 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
+import type { User } from "@/context/AuthContext"
 
 export function NavUser({
   user,
 }: {
-  user: {
-    name?: string
-    email?: string
-    avatar?: string
-    gender?: "male" | "female" | "other"
-  } | null
+  user: Partial<User> | null
 }) {
   const { isMobile } = useSidebar()
   const { handleLogout } = useAuth()
@@ -58,11 +54,13 @@ export function NavUser({
                   <AvatarImage
                     src={
                       user?.avatar
-                        || (user?.gender === "female"
-                              ? "/avatars/girl.png"
+                        || (user?.role === "admin" ? "/avatars/admin.png" 
+                          : user?.gender === "female"
+                              ? "/avatars/female.png"
                               : user?.gender === "male"
-                                ? "/avatars/boy.png"
-                                : "/avatars/employee.png")
+                                ? "/avatars/male.png"
+                                : "/avatars/organization.png"
+                              )
                     }
                     alt={user?.name || "User"}
                   />

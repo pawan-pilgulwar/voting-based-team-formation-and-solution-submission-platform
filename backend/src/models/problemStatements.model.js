@@ -20,6 +20,11 @@ ProblemSchema.index({ title: "text", description: "text" });
 ProblemSchema.index({ tags: 1 });
 ProblemSchema.index({ postedBy: 1 });
 
+// Custom validator — limit max number of votes
+ProblemSchema.path("votes").validate(function (value) {
+  return value.length <= 6; // e.g., limit to 6 votes
+}, "Maximum of 6 votes allowed.");
+
 ProblemSchema.methods.brief = function () {
   return {
     id: this._id,

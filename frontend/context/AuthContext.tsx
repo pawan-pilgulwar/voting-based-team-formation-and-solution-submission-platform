@@ -4,14 +4,14 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import axios from "axios";
 
 // User interface
-interface User {
+export interface User {
   _id: string;
   username: string;
   name: string;
   email: string;
   avatar?: string;
   coverImage?: string;
-  role: "student" | "mentor" | "orgAdmin" | "superAdmin";
+  role: "student" | "mentor" | "organization" | "admin";
   bio?: string;
   institution?: string;
   isVerified?: boolean;

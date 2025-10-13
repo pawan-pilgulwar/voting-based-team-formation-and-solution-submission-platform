@@ -28,10 +28,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       case "mentor":
         mapped = "mentor"
         break
-      case "orgAdmin":
+      case "organization":
         mapped = "organization"
         break
-      case "superAdmin":
+      case "admin":
         mapped = "admin"
         break
       case "student":

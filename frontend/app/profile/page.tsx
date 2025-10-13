@@ -18,9 +18,9 @@ export default function ProfilePage() {
     switch (user.role) {
       case "mentor":
         return "mentor";
-      case "orgAdmin":
+      case "organization":
         return "organization";
-      case "superAdmin":
+      case "admin":
         return "admin";
       case "student":
       default:
@@ -78,7 +78,7 @@ export default function ProfilePage() {
         if (form.expertise) payload.expertise = form.expertise.split(",").map((s: any) => s.trim()).filter(Boolean);
         if (form.availability) payload.availability = form.availability;
         if (form.skills) payload.skills = form.skills.split(",").map((s: any) => s.trim()).filter(Boolean);
-      } else if (user?.role === "orgAdmin") {
+      } else if (user?.role === "organization") {
         if (form.organizationName) payload.organizationName = form.organizationName;
         if (form.designation) payload.designation = form.designation;
       }
@@ -199,7 +199,7 @@ export default function ProfilePage() {
                   </>
                 )}
 
-                {user.role === "orgAdmin" && (
+                {user.role === "organization" && (
                   <>
                     <div className="space-y-2">
                       <Label>Organization Name</Label>
@@ -334,7 +334,7 @@ export default function ProfilePage() {
             </>
           )}
 
-          {user.role === "orgAdmin" && (
+          {user.role === "organization" && (
             <>
               {user.organizationName && (
                 <div className="space-y-2">

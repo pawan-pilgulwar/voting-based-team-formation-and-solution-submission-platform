@@ -5,7 +5,7 @@ const baseRegister = z.object({
   email: z.string().email(),
   username: z.string().min(3),
   password: z.string().min(6),
-  role: z.enum(["student", "mentor", "orgAdmin", "superAdmin"]),
+  role: z.enum(["student", "mentor", "organization", "admin"]),
 });
 
 const studentFields = z.object({
@@ -52,8 +52,8 @@ export const registerSchema = z.object({
   body: z.discriminatedUnion("role", [
     baseRegister.extend({ role: z.literal("student") }).merge(studentFields),
     baseRegister.extend({ role: z.literal("mentor") }).merge(mentorFields),
-    baseRegister.extend({ role: z.literal("orgAdmin") }).merge(orgAdminFields),
-    baseRegister.extend({ role: z.literal("superAdmin") }),
+    baseRegister.extend({ role: z.literal("organization") }).merge(orgAdminFields),
+    baseRegister.extend({ role: z.literal("admin") }),
   ]),
 });
 
