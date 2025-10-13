@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -13,29 +13,54 @@ export type ProfileCardProps = {
   email: string;
   role: UserRole;
   avatarUrl?: string;
+  coverUrl?: string;
   onAvatarUpload?: (file: File) => void;
+  gender?: "male" | "female";
 };
 
-export function ProfileCard({ name, email, role, avatarUrl, onAvatarUpload }: ProfileCardProps) {
+export function ProfileCard({ name, email, role, avatarUrl, coverUrl, onAvatarUpload, gender }: ProfileCardProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Build gender-based avatar fallback chain
+  const genderKey = gender && ["male","female"].includes(gender) ? gender : null;
+  let genderPng
+  if (!genderKey) {
+    genderPng = "/employee.png"
+  } else {
+    genderPng = genderKey == "male"? `/avatars/boy.png` : "/avatars/girl.png";
+  }
+  const [avatarSrc, setAvatarSrc] = useState<string>(
+    avatarUrl && avatarUrl.trim() !== "" ? avatarUrl : genderPng
+  );
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <CardHeader
+        className="relative flex flex-col sm:flex-row sm:items-center gap-4 h-60 justify-end text-white"
+        style={{
+          backgroundImage: coverUrl
+            ? `url(${coverUrl})`
+            : "linear-gradient(to right, #1e293b, #334155)", // fallback gradient
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: "0.8",
+        }}
+      >
         <div className="relative h-20 w-20">
           <Avatar className="h-20 w-20">
-            {avatarUrl ? (
-              <AvatarImage src={avatarUrl} alt={name} />
-            ) : (
-              <AvatarFallback className="text-lg">
-                {name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase()}
-              </AvatarFallback>
-            )}
+            <AvatarImage
+              src={avatarSrc}
+              alt={name}
+            />
+            <AvatarFallback className="text-lg">
+              {name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <input
             ref={inputRef}

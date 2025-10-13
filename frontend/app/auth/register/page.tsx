@@ -32,6 +32,8 @@ const Page = () => {
   const [role, setRole] = useState("");
   const { setUser, user, loading, setLoading } = useAuth();
   const router = useRouter();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
 
   // Zod schema
   const schema = z
@@ -48,10 +50,16 @@ const Page = () => {
       year: z.coerce.number().int().min(1).max(8).optional(),
       branch: z.string().optional(),
       skills: z.string().optional(),
+      expertise: z.string().optional(),
       preferredTeamRoles: z.string().optional(),
       availability: z.string().optional(),
       organizationName: z.string().optional(),
       designation: z.string().optional(),
+      bio: z.string().max(1000).optional(),
+      institution: z.string().optional(),
+      social_linkedin: z.string().url().optional().or(z.literal("")),
+      social_github: z.string().url().optional().or(z.literal("")),
+      social_website: z.string().url().optional().or(z.literal("")),
       terms: z.boolean(),
     })
     .refine((d: any) => d.password === d.confirmPassword, {
@@ -102,37 +110,42 @@ const Page = () => {
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      const payload: any = {
-        name: values.name,
-        email: values.email,
-        username: values.username,
-        password: values.password,
-        role: values.role,
-      };
+      const fd = new FormData();
+      fd.append("name", values.name);
+      fd.append("email", values.email);
+      fd.append("username", values.username);
+      fd.append("password", values.password);
+      fd.append("role", values.role as string);
+
+      if (values.bio) fd.append("bio", values.bio);
+      if (values.institution) fd.append("institution", values.institution);
+      if (values.social_linkedin) fd.append("social[linkedin]", values.social_linkedin);
+      if (values.social_github) fd.append("social[github]", values.social_github);
+      if (values.social_website) fd.append("social[website]", values.social_website);
+
       if (values.role === "student") {
-        payload.gender = values.gender;
-        if (values.year) payload.year = values.year;
-        if (values.branch) payload.branch = values.branch;
-        if (values.skills) payload.skills = values.skills;
-        if (values.preferredTeamRoles)
-          payload.preferredTeamRoles = values.preferredTeamRoles;
+        if (values.gender) fd.append("gender", values.gender);
+        if (values.year) fd.append("year", String(values.year));
+        if (values.branch) fd.append("branch", values.branch);
+        if (values.skills) fd.append("skills", values.skills);
+        if (values.preferredTeamRoles) fd.append("preferredTeamRoles", values.preferredTeamRoles);
       } else if (values.role === "mentor") {
-        payload.gender = values.gender;
-        if (values.availability) payload.availability = values.availability;
-        if (values.skills) payload.skills = values.skills;
+        if (values.gender) fd.append("gender", values.gender);
+        if (values.skills) fd.append("skills", values.skills);
+        if (values.expertise) fd.append("expertise", values.expertise);
+        if (values.availability) fd.append("availability", values.availability);
       } else if (values.role === "orgAdmin") {
-        if (values.organizationName)
-          payload.organizationName = values.organizationName;
-        if (values.designation) payload.designation = values.designation;
+        if (values.organizationName) fd.append("organizationName", values.organizationName);
+        if (values.designation) fd.append("designation", values.designation);
       }
+
+      if (avatarFile) fd.append("avatar", avatarFile);
+      if (coverFile) fd.append("coverImage", coverFile);
 
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/register`,
-        payload,
+        fd,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
           withCredentials: true,
         }
       );
@@ -181,6 +194,22 @@ const Page = () => {
               {errors.username && (
                 <p className="text-xs text-red-500">{errors.username.message}</p>
               )}
+            </div>
+
+            {/* Profile Images */}
+            <div className="grid gap-2">
+              <Label htmlFor="avatar">Profile image</Label>
+              <Input id="avatar" type="file" accept="image/*" onChange={(e) => {
+                const f = e.target.files?.[0];
+                setAvatarFile(f || null);
+              }} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="coverImage">Cover image</Label>
+              <Input id="coverImage" type="file" accept="image/*" onChange={(e) => {
+                const f = e.target.files?.[0];
+                setCoverFile(f || null);
+              }} />
             </div>
 
             {/* Role Selection */}
@@ -266,6 +295,10 @@ const Page = () => {
                   <Input id="skills" type="text" placeholder="AI, Web Dev" {...register("skills")} />
                 </div>
                 <div className="grid gap-2">
+                  <Label htmlFor="expertise">Expertise (comma separated)</Label>
+                  <Input id="expertise" type="text" placeholder="AI, Web Dev" {...register("expertise")} />
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="availability">Availability</Label>
                   <Input id="availability" type="text" placeholder="Weekends" {...register("availability")} />
                 </div>
@@ -286,6 +319,26 @@ const Page = () => {
             )}
 
             {/* Common fields */}
+            <div className="grid gap-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Input id="bio" type="text" placeholder="Tell us about yourself" {...register("bio")} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="institution">Institution</Label>
+              <Input id="institution" type="text" placeholder="Your college/university" {...register("institution")} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="social_linkedin">LinkedIn</Label>
+              <Input id="social_linkedin" type="url" placeholder="https://linkedin.com/in/..." {...register("social_linkedin")} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="social_github">GitHub</Label>
+              <Input id="social_github" type="url" placeholder="https://github.com/username" {...register("social_github")} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="social_website">Website</Label>
+              <Input id="social_website" type="url" placeholder="https://yourdomain.com" {...register("social_website")} />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" {...register("password")} />

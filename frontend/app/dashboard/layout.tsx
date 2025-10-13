@@ -29,16 +29,17 @@ export default function DashboardLayout({
   if (!user) return null;
   const role =
     user?.role ||
-    ("student" as "student" | "mentor" | "organization" | "admin");
+    ("student" as "student" | "mentor" | "orgAdmin" | "superAdmin");
 
   const roleTitleMap: Record<string, string> = {
     student: "Student Dashboard",
     mentor: "Mentor Dashboard",
-    organization: "Organization Dashboard",
-    admin: "Admin",
+    orgAdmin: "Organization Admin Dashboard",
+    superAdmin: "Admin Dashboard",
   };
 
-  const homeHref = role === "admin" ? "/admin" : `/dashboard/${role}`;
+  const homeHref =
+    role === "orgAdmin" || role === "superAdmin" ? "/admin" : `/dashboard/${role}`;
 
   return (
     <>
