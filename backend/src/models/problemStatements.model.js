@@ -3,17 +3,54 @@
 import mongoose, { Schema } from "mongoose";
 
 const ProblemSchema = new Schema({
-  title: { type: String, required: true, trim: true },
-  description: { type: String, required: true, minlength: 20 },
-  tags: [{ type: String, index: true }], // e.g. ["AI","Web","Healthcare"]
-  difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "medium" },
-  postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  deadline: { type: Date },
-  votes: [{ type: Schema.Types.ObjectId, ref: "Vote" }],
-  selectedTeams: [{ type: Schema.Types.ObjectId, ref: "Team" }],
-  status: { type: String, enum: ["open","in-progress","completed","archived"], default: "open" },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  title: { 
+    type: String, 
+    required: true, 
+    trim: true 
+  },
+  description: { 
+    type: String, 
+    required: true, 
+    minlength: 20 
+  },
+  tags: [{ 
+    type: String, 
+    index: true 
+  }], // e.g. ["AI","Web","Healthcare"]
+  difficulty: { 
+    type: String, 
+    enum: ["easy", "medium", "hard"], 
+    default: "medium" 
+  },
+  postedBy: { 
+    type: Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
+  },
+  deadline: { 
+    type: Date 
+  },
+  votes: [{ 
+    type: Schema.Types.ObjectId, 
+    ref: "Vote" 
+  }],
+  selectedTeams: [{ 
+    type: Schema.Types.ObjectId, 
+    ref: "Team" 
+  }],
+  status: { 
+    type: String, 
+    enum: ["open","in-progress","completed","archived"], 
+    default: "open" 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  },
+  updatedAt: { 
+    type: Date, 
+    default: Date.now 
+  }
 }, { timestamps: true });
 
 ProblemSchema.index({ title: "text", description: "text" });
