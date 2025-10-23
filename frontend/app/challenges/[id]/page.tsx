@@ -68,6 +68,7 @@ export default async function ChallengeDetailPage({ params }: { params: Promise<
 
       <div className="flex gap-3">
         <Button>Join</Button>
+        <Button variant="outline"> solution</Button>
         <Button variant="outline">Start</Button>
         <Link href="/challenges">
           <Button variant="ghost">Back to Challenges</Button>
