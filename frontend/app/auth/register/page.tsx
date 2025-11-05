@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "@/hooks/use-toast";
 
 const Page = () => {
   const [role, setRole] = useState("");
@@ -155,9 +156,12 @@ const Page = () => {
       }
 
       setUser(res.data.data.user);
+      toast?.({ title: "Registration Successful", description: "Welcome to the platform!" });
+      router.push("/dashboard");
 
     } catch (error) {
       console.log(error);
+      toast?.({ title: "Registration Failed", description: "Please try again." });
     } finally { setLoading(false); }
   };
 

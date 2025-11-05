@@ -44,7 +44,13 @@ const TeamSchema = new Schema({
     enum: ["active","submitted","reviewed","archived"], 
     default: "active" 
   },
-  progress: ProgressSchema,
+  chatRoomId: { 
+    type: String 
+  },
+  progress: { 
+    type: ProgressSchema, 
+    default: () => ({}) 
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 

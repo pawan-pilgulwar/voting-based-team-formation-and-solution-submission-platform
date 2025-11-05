@@ -1,6 +1,9 @@
+"use client";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+// import axios from "axios";
+// import { useState } from "react";
 
 const mockTeams = [
   { id: "t1", name: "Health Innovators", members: 6, role: "Member" },
@@ -8,7 +11,10 @@ const mockTeams = [
   { id: "t3", name: "FinTech Wizards", members: 5, role: "Can Join" },
 ] as const;
 
+
 export default function TeamsPage() {
+  // const [teams, setTeams] = useState<string[]>([]);
+
   return (
     <div className="max-w-6xl mx-10 space-y-6">
       <div>

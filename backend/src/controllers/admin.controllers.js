@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/Users.model.js";
-import { Problem } from "../models/problemStatements.model.js";
+import { Problem } from "../models/problems.model.js";
 import { Team } from "../models/teams.model.js";
 import { Report } from "../models/reports.model.js";
 

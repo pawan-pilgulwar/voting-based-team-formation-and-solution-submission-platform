@@ -32,7 +32,7 @@ const ProblemSchema = new Schema({
   },
   votes: [{ 
     type: Schema.Types.ObjectId, 
-    ref: "Vote" 
+    ref: "Vote",
   }],
   selectedTeams: [{ 
     type: Schema.Types.ObjectId, 
@@ -55,7 +55,7 @@ const ProblemSchema = new Schema({
 
 ProblemSchema.index({ title: "text", description: "text" });
 ProblemSchema.index({ tags: 1 });
-ProblemSchema.index({ postedBy: 1 });
+ProblemSchema.index({ postedBy: 1 }, { unique: true });
 
 // Custom validator — limit max number of votes
 ProblemSchema.path("votes").validate(function (value) {

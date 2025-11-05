@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import axios from "axios";
+import { toast } from "@/hooks/use-toast";
 
 // User interface
 export interface User {
@@ -80,11 +81,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (res.data.data) {
         setUser(res.data.data);
+        toast?.({ title: `Welcome back, ${res.data.data.name.split(" ")[0]}!`, description: "You are logged in." });
       } else {
         setUser(null);
       }
     } catch (err) {
       setUser(null); // not logged in or token invalid
+      toast?.({ title: "Session Expired", description: "Please log in again." });
     } finally {
       setLoading(false);
     }
@@ -93,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleLogout = async () => {
     setLoading(true)
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/logout`, {}, 
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/logout`, {}, 
         {
         headers: {
           "Content-Type": "application/json",
@@ -101,9 +104,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         withCredentials: true,
       })
       await fetchUser()
+      toast?.({ title: "Logged Out", description: "You have been logged out successfully." });
 
-    } catch (error) {
+    } catch (error: any) {
       console.log(error)
+      toast?.({ title: "Logout Failed", description: error.response?.data?.message || "Something went wrong." });
     } finally {
       setLoading(false)
     }
@@ -144,10 +149,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       );
       if (res?.data?.data) {
         setUser(res.data.data as User);
+        toast?.({ title: "Profile Updated", description: "Your profile has been updated successfully." });
         return res.data.data as User;
       }
       return null;
-    } catch (err) {
+    } catch (err: any) {
+      toast?.({ title: "Profile Update Failed", description: err.response?.data?.message || "Something went wrong." });
       throw err;
     }
   };
@@ -162,8 +169,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           headers: { "Content-Type": "application/json" },
         }
       );
+      toast?.({ title: "Password Changed", description: "Your password has been changed successfully." });
       return true;
-    } catch (err) {
+    } catch (err: any) {
+      toast?.({ title: "Password Change Failed", description: err.response?.data?.message || "Something went wrong." });
       throw err;
     }
   };

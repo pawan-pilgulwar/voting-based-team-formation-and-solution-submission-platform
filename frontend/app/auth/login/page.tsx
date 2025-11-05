@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "@/hooks/use-toast";
 
 const schema = z.object({
   email: z.string().email({ message: "Enter a valid email" }),
@@ -63,15 +64,15 @@ const Page = () => {
         throw new Error("Failed to fetch user");
       }
 
-      console.log(res)
-
       setUser(res.data.data.user);
+      toast?.({ title: "Login Successful", description: "Welcome back!" });
       router.push("/dashboard");
 
     } catch (error: any) {
       // Show generic form error
       const msg = error?.response?.data?.message || "Login failed";
       setError("password", { message: msg });
+      toast?.({ title: "Login Failed", description: msg });
     }
     finally { setLoading(false); }
   };

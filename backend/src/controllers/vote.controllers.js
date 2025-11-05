@@ -3,9 +3,10 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Vote } from "../models/votes.model.js";
-import { Problem } from "../models/problemStatements.model.js";
+import { Problem } from "../models/problems.model.js";
 import { Team } from "../models/teams.model.js";
 import { User } from "../models/Users.model.js";
+import { getAIScoreForUsers } from "../services/aiScore.service.js";
 
 // POST /api/v1/votes/:problemId
 export const castVote = asyncHandler(async (req, res) => {
@@ -21,6 +22,11 @@ export const castVote = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Problem not found");
   }
 
+  // ✅ Check if max votes reached
+  if (problem.votes.length >= 6) {
+    throw new ApiError(400, "Voting is closed for this problem");
+  }
+
   try {
     const vote = await Vote.create({ problem: problem._id, votedBy: userId });
 
@@ -31,15 +37,20 @@ export const castVote = asyncHandler(async (req, res) => {
     const totalVotes = await Vote.countDocuments({ problem: problem._id });
 
     // Auto team formation at 6 votes if no team exists for this problem yet
-    const existingTeamCount = await Team.countDocuments({ problem: problem._id });
-    if (totalVotes === 6 && existingTeamCount === 0) {
+    const existingTeam = await Team.findOne({ problem: problem._id });
+    if (totalVotes === 6 && !existingTeam) {
       const voters = await Vote.find({ problem: problem._id })
         .sort({ createdAt: 1 })
         .limit(6)
         .lean();
 
-      const leaderUserId = voters[0]?.votedBy;
-      const memberUserIds = voters.slice(1).map(v => v.votedBy);
+      const userIds = voters.map(v => v.votedBy._id);
+
+      // Use AI scoring logic to select leader & best team composition
+      const aiRanked = await getAIScoreForUsers(userIds, problem);
+
+      const leaderUserId = aiRanked[0]?.userId;
+      const memberUserIds = aiRanked.slice(1).map(u => u.userId);
 
       const teamNameBase = problem.title?.slice(0, 30) || "Team";
       const newTeam = await Team.create({
