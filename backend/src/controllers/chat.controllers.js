@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ChatMessage } from "../models/chat.model.js";
+import { Team } from "../models/teams.model.js";
 
 // POST /api/v1/chat/team/:teamId
 export const postTeamMessage = asyncHandler(async (req, res) => {
@@ -42,4 +43,26 @@ export const deleteMessage = asyncHandler(async (req, res) => {
     } catch (error) {
         return res.status(500).json(new ApiError(500, "Internal Server Error"));
     }
+});
+
+
+export const getTeamsByUserId = asyncHandler(async (req, res) => {
+  const { userId, role } = req.params;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) throw new ApiError(400, "Invalid user id");
+
+    if (role !== "student" && role !== "mentor") throw new ApiError(400, "Invalid role");
+
+    const teams = await Team.find({ "members.user": userId, role: role })
+        .populate("teams")
+        .populate("members.user")
+        .populate("mentor")
+
+    if (!teams) throw new ApiError(404, "Teams not found");
+    
+    return res.status(200).json(new ApiResponse(200, teams, "Teams fetched successfully"));
+  } catch (error) {
+    return res.status(500).json(new ApiError(500, "Internal Server Error"));
+  }
 });

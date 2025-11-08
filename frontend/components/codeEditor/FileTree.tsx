@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Upload, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { getTeamCodeFiles } from "@/lib/api";
 
 interface FileNode {
   id: string;
@@ -33,34 +34,70 @@ interface FileTreeProps {
 }
 
 export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: FileTreeProps) => {
-  const [files, setFiles] = useState<FileNode[]>([
-    {
-      id: "1",
-      name: "src",
-      type: "folder",
-      path: "src",
-      children: [
-        { id: "2", name: "main.py", type: "file", path: "src/main.py", lastModified: "2 min ago" },
-        { id: "3", name: "utils.py", type: "file", path: "src/utils.py", lastModified: "5 min ago" },
-      ],
-    },
-    {
-      id: "4",
-      name: "tests",
-      type: "folder",
-      path: "tests",
-      children: [
-        { id: "5", name: "test_main.py", type: "file", path: "tests/test_main.py", lastModified: "10 min ago" },
-      ],
-    },
-    { id: "6", name: "README.md", type: "file", path: "README.md", lastModified: "1 hour ago" },
-  ]);
+  const [files, setFiles] = useState<FileNode[]>([]);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["1", "4"]));
   const [selectedFolder, setSelectedFolder] = useState<FileNode | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState<"file" | "folder">("file");
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getTeamCodeFiles(teamId);
+        // Expecting data like [{ path: "src/main.py", content?: string, updatedAt?: string }, ...]
+        const nodes = buildTreeFromPaths((data || []).map((f: any) => ({ path: f.path, lastModified: f.updatedAt })));
+        setFiles(nodes);
+      } catch (e) {
+        // Fallback to a minimal starter structure
+        setFiles([
+          { id: "1", name: "src", type: "folder", path: "src", children: [
+            { id: "2", name: "main.py", type: "file", path: "src/main.py", lastModified: "just now" },
+          ]},
+          { id: "3", name: "README.md", type: "file", path: "README.md", lastModified: "just now" },
+        ]);
+        toast.info("Loaded sample files. Connect code files API for full sync.");
+      }
+    };
+    load();
+  }, [teamId]);
+
+  const buildTreeFromPaths = (items: Array<{ path: string; lastModified?: string }>): FileNode[] => {
+    const root: Record<string, any> = {};
+    items.forEach((it, idx) => {
+      const segments = it.path.split("/").filter(Boolean);
+      let cur = root;
+      let curPath = "";
+      segments.forEach((seg, i) => {
+        curPath = curPath ? `${curPath}/${seg}` : seg;
+        const isLeaf = i === segments.length - 1;
+        if (!cur[seg]) {
+          cur[seg] = {
+            __node: {
+              id: `${idx}-${i}-${seg}`,
+              name: seg,
+              type: isLeaf ? "file" : "folder",
+              path: curPath,
+              lastModified: isLeaf ? (it.lastModified || undefined) : undefined,
+              children: isLeaf ? undefined : [],
+            },
+          };
+        }
+        cur = cur[seg];
+      });
+    });
+    const toArray = (obj: any): FileNode[] => {
+      return Object.values(obj).map((v: any) => {
+        const node: FileNode = v.__node;
+        if (node.type === "folder") {
+          node.children = toArray(v);
+        }
+        return node;
+      });
+    };
+    return toArray(root);
+  };
 
   const toggleExpanded = (id: string) => {
     const newExpanded = new Set(expanded);

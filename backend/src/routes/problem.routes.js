@@ -11,7 +11,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 // Public routes
-router.get("/get-all", getAllProblems);
+router.get("/get-all", verifyJWT, getAllProblems);
 router.get("/:id", getProblemById);
 
 // Protected routes

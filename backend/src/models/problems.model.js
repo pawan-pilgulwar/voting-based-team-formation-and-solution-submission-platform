@@ -1,6 +1,7 @@
 
 
 import mongoose, { Schema } from "mongoose";
+import { Vote } from "./votes.model.js";
 
 const ProblemSchema = new Schema({
   title: { 
@@ -70,6 +71,22 @@ ProblemSchema.methods.brief = function () {
     status: this.status,
     deadline: this.deadline
   };
+};
+
+ProblemSchema.methods.getVoteCount = function () {
+  return this.votes.length ? this.votes.length : 0;
+};
+
+ProblemSchema.methods.hasVoted = async function (userId) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) return false;
+
+  // Check in Vote collection if this user has already voted for this problem
+  const existingVote = await Vote.findOne({
+    problem: this._id,
+    votedBy: userId,
+  });
+
+  return !!existingVote;
 };
 
 export const Problem = mongoose.model("Problem", ProblemSchema);

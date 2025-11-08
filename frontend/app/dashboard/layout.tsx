@@ -56,23 +56,6 @@ export default function DashboardLayout({
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
               {roleTitleMap[role] || "Dashboard"}
             </h1>
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" asChild>
-                <Link href={homeHref}>Home</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/challenges">Challenges</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/teams">Teams</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/projects">Projects</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/chat">Chat</Link>
-              </Button>
-            </div>
           </div>
           <Separator />
         </div>

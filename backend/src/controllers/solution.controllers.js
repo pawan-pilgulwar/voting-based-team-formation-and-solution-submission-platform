@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Solution } from "../models/solutions.model.js";
 import { Team } from "../models/teams.model.js";
-import { Problem } from "../models/problemSs.model.js";
+import { Problem } from "../models/problems.model.js";
 
 // POST /api/v1/solutions/submit
 export const submitSolution = asyncHandler(async (req, res) => {

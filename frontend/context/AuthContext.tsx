@@ -3,37 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
-
-// User interface
-export interface User {
-  _id: string;
-  username: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  coverImage?: string;
-  role: "student" | "mentor" | "organization" | "admin";
-  bio?: string;
-  institution?: string;
-  isVerified?: boolean;
-  social?: {
-    linkedin?: string;
-    github?: string;
-    website?: string;
-  };
-  // student fields
-  gender?: "male" | "female" | "other";
-  year?: number;
-  branch?: string;
-  skills?: string[];
-  preferredTeamRoles?: string[];
-  // mentor fields
-  expertise?: string[];
-  availability?: string;
-  // orgAdmin fields
-  organizationName?: string;
-  designation?: string;
-}
+import { User } from "@/lib/types";
 
 // Context type
 interface AuthContextType {

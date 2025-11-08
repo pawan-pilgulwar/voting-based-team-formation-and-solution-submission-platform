@@ -9,22 +9,40 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 export const createProblem = asyncHandler(async (req, res) => {
   const { title, description, tags, difficulty, deadline } = req.body;
 
-  if (!title || !description) {
-    throw new ApiError(400, "Title and description are required");
+  try {
+    if (!title || !description) {
+      throw new ApiError(400, "Title and description are required");
+    }
+  
+    const newProblem = await Problem.create({
+      title,
+      description,
+      tags,
+      difficulty,
+      deadline,
+      postedBy: req.user._id, // from auth middleware
+    });
+
+    if (!newProblem) {
+      throw new ApiError(500, "Failed to create problem");
+    }
+
+    const enrichedProblems = await Promise.all(
+      [newProblem].map(async (p) => {
+      return {
+        ...p.toObject(),
+        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
+        voteCount: p.getVoteCount(),
+      };
+    })
+  );
+  
+    return res
+      .status(201)
+      .json(new ApiResponse(201, enrichedProblems, "Problem created successfully"));
+  } catch (error) {
+    throw new ApiError(500, "Failed to create problem");
   }
-
-  const newProblem = await Problem.create({
-    title,
-    description,
-    tags,
-    difficulty,
-    deadline,
-    postedBy: req.user._id, // from auth middleware
-  });
-
-  return res
-    .status(201)
-    .json(new ApiResponse(201, newProblem, "Problem created successfully"));
 });
 
 /**
@@ -33,22 +51,38 @@ export const createProblem = asyncHandler(async (req, res) => {
 export const getAllProblems = asyncHandler(async (req, res) => {
   const { difficulty, status, tag, search } = req.query;
 
-  const filter = {};
-  if (difficulty) filter.difficulty = difficulty;
-  if (status) filter.status = status;
-  if (tag) filter.tags = tag;
+  try {
+    const filter = {};
+    if (difficulty) filter.difficulty = difficulty;
+    if (status) filter.status = status;
+    if (tag) filter.tags = tag;
 
-  if (search) {
-    filter.$text = { $search: search };
-  }
+    if (search) {
+      filter.$text = { $search: search };
+    }
 
-  const problems = await Problem.find(filter)
+    const problems = await Problem.find(filter)
     .populate("postedBy", "username email")
+    .populate("votes")
     .sort({ createdAt: -1 });
+    
+  const enrichedProblems = await Promise.all(
+    problems.map(async (p) => {
+      return {
+        ...p.toObject(),
+        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
+        voteCount: p.getVoteCount(),
+      };
+    })
+  );
 
   return res
     .status(200)
-    .json(new ApiResponse(200, problems, "Problems fetched successfully"));
+    .json(new ApiResponse(200, enrichedProblems, 
+    "Problems fetched successfully", ));
+  } catch (error) {
+    throw new ApiError(500, "Failed to fetch problems");
+  }
 });
 
 /**
@@ -66,9 +100,19 @@ export const getProblemById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Problem not found");
   }
 
+  const enrichedProblem = await Promise.all(
+    [problem].map(async (p) => {
+      return {
+        ...p.toObject(),
+        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
+        voteCount: p.getVoteCount(),
+      };
+    })
+  );
+
   return res
     .status(200)
-    .json(new ApiResponse(200, problem, "Problem fetched successfully"));
+    .json(new ApiResponse(200, enrichedProblem, "Problem fetched successfully"));
 });
 
 /**
@@ -89,9 +133,19 @@ export const updateProblem = asyncHandler(async (req, res) => {
   Object.assign(problem, updates);
   await problem.save();
 
+  const enrichedProblem = await Promise.all(
+    [problem].map(async (p) => {
+      return {
+        ...p.toObject(),
+        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
+        voteCount: p.getVoteCount(),
+      };
+    })
+  );
+
   return res
     .status(200)
-    .json(new ApiResponse(200, problem, "Problem updated successfully"));
+    .json(new ApiResponse(200, enrichedProblem, "Problem updated successfully"));
 });
 
 /**

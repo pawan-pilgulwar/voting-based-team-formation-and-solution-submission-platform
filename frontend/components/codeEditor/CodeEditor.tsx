@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Play, Clock, X } from "lucide-react";
+import { Save, Play, Clock, X, Send } from "lucide-react";
 import { toast } from "sonner";
+import { saveCode, submitSolution } from "@/lib/api";
 
 interface EditorFile {
   id: string;
@@ -64,7 +65,17 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
       )
     );
 
-    toast.success(`Saved ${currentFile.name}`);
+    try {
+      await saveCode({
+        teamId,
+        problemId,
+        path: currentFile.path,
+        content: code,
+      });
+      toast.success(`Saved ${currentFile.name}`);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || "Save failed");
+    }
   };
 
   const handleRun = () => {
@@ -74,6 +85,26 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
       return;
     }
     onRun(code, currentFile.language);
+  };
+
+  const handleSubmit = async () => {
+    const currentFile = openFiles.find((f) => f.id === activeTab);
+    if (!currentFile) {
+      toast.error("No file selected");
+      return;
+    }
+    try {
+      await submitSolution({
+        teamId,
+        problemId,
+        code: code,
+        filename: currentFile.name,
+        language: currentFile.language,
+      });
+      toast.success("Solution submitted");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || "Submit failed");
+    }
   };
 
   const handleCloseTab = (fileId: string) => {
@@ -103,6 +134,10 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
             <Play className="h-3.5 w-3.5 mr-1.5" />
             Run
           </Button>
+          <Button variant="default" size="sm" className="h-8 bg-primary/90" onClick={handleSubmit}>
+            <Send className="h-3.5 w-3.5 mr-1.5" />
+            Submit
+          </Button>
         </div>
         {currentFile && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -122,7 +157,7 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
                 className="relative rounded-none border-r border-panel-border data-[state=active]:bg-editor-bg px-4 py-2"
               >
                 <span className="text-xs">{file.name}</span>
-                <button
+                <span
                   onClick={(e) => {
                     e.stopPropagation();
                     handleCloseTab(file.id);
@@ -130,7 +165,7 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
                   className="ml-2 hover:bg-panel-hover rounded p-0.5"
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>

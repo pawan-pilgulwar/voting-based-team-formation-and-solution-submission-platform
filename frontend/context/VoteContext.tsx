@@ -22,7 +22,6 @@ export const VoteProvider = ({ children }: { children: ReactNode }) => {
   // 🗳️ Cast a vote
   const castVote = async (problemId: string) => {
     try {
-      setLoading(true);
       await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/votes/${problemId}`, {}, { withCredentials: true });
 
       // update local state
@@ -42,8 +41,6 @@ export const VoteProvider = ({ children }: { children: ReactNode }) => {
         title: "Vote Failed",
         description: error.response?.data?.message || "Something went wrong.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 

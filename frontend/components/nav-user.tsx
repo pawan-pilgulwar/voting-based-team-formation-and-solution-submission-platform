@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
-import type { User } from "@/context/AuthContext"
+import { User } from "@/lib/types"
 
 export function NavUser({
   user,

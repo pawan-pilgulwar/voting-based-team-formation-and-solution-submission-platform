@@ -37,7 +37,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const fetchTeamMessages = async (teamId: string) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat/team/${teamId}`, { withCredentials: true });
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/team/${teamId}`, { withCredentials: true });
       setChats(res.data);
       toast?.({ title: "Messages Loaded", description: "Team messages have been loaded successfully." });
     } catch (err: any) {
@@ -53,7 +53,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat/team/${teamId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/team/${teamId}`,
         { text, attachments },
         { withCredentials: true }
       );

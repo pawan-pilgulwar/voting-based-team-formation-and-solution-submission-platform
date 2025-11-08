@@ -28,6 +28,7 @@ import userRouter from "./routes/user.routes.js";
 import voteRouter from "./routes/vote.routes.js";
 import codeRouter from "./routes/code.routes.js";
 import chatRouter from "./routes/chat.routes.js";
+import solutionRouter from "./routes/solution.routes.js";
 import problemRouter from "./routes/problem.routes.js";
 import teamRouter from "./routes/team.routes.js";
 import aiRouter from "./routes/ai.routes.js";
@@ -44,6 +45,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/votes", voteRouter);
 app.use("/api/v1/code", codeRouter);
 app.use("/api/v1/chat", chatRouter);
+app.use("/api/v1/solution", solutionRouter);
 app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/admin", adminRouter);
 

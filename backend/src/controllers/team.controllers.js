@@ -90,20 +90,26 @@ export const formTeamByVoting = asyncHandler(async (req, res) => {
  * 📋 3. Get All Teams (optionally filter by problem or mentor)
  */
 export const getAllTeams = asyncHandler(async (req, res) => {
-  const { problemId, mentorId } = req.query;
+  const { problemId, mentorId, studentId } = req.query;
 
-  const filter = {};
-  if (problemId) filter.problem = problemId;
-  if (mentorId) filter.mentor = mentorId;
+  try {
+    const filter = {};
+    if (problemId) filter.problem = problemId;
+    if (mentorId) filter.mentor = mentorId;
+    if (studentId) filter.members.user = studentId;
 
-  const teams = await Team.find(filter)
+    const teams = await Team.find(filter)
     .populate("problem")
     .populate("members.user")
     .populate("mentor");
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, teams, "Teams fetched successfully"));
+  } catch (error) {
+    throw new ApiError(500, "Internal server error while fetching all teams.")
+  }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, teams, "Teams fetched successfully"));
 });
 
 /**
@@ -116,6 +122,8 @@ export const getTeamById = asyncHandler(async (req, res) => {
     .populate("problem")
     .populate("members.user")
     .populate("mentor");
+
+    console.log(team);
 
   if (!team) throw new ApiError(404, "Team not found");
 
@@ -141,3 +149,5 @@ export const updateTeamProgress = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, team, "Team progress updated successfully"));
 });
+
+

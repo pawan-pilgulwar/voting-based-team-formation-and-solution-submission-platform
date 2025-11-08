@@ -26,7 +26,7 @@ export type RoleMenuConfig = Record<UserRole, MenuItem[]>;
 export const roleMenus: RoleMenuConfig = {
   student: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Challenges", url: "/challenges", icon: Swords },
+    { title: "Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
     { title: "Projects", url: "/projects", icon: Folder },
     { title: "Profile", url: "/profile", icon: UserCircle },
@@ -36,7 +36,7 @@ export const roleMenus: RoleMenuConfig = {
   mentor: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Assigned Teams", url: "/mentor/teams", icon: Users },
-    { title: "Challenges", url: "/challenges", icon: Swords },
+    { title: "Problems", url: "/problems", icon: Swords },
     { title: "Submissions", url: "/mentor/submissions", icon: FileText },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Chat", url: "/chat", icon: MessageSquare },
@@ -44,7 +44,7 @@ export const roleMenus: RoleMenuConfig = {
   ],
   organization: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Hosted Challenges", url: "/org/challenges", icon: Swords },
+    { title: "Hosted Problems", url: "/problems/hostproblem", icon: Swords },
     { title: "Reports", url: "/org/reports", icon: BarChart3 },
     { title: "Teams", url: "/teams", icon: Users },
     { title: "Profile", url: "/profile", icon: UserCircle },
@@ -53,7 +53,7 @@ export const roleMenus: RoleMenuConfig = {
   admin: [
     { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
     { title: "Users", url: "/admin/users", icon: Users },
-    { title: "Challenges", url: "/admin/challenges", icon: Swords },
+    { title: "Problems", url: "/admin/problems", icon: Swords },
     { title: "Reports", url: "/admin/reports", icon: BarChart3 },
     { title: "Setting", url: `/setting`, icon: Settings2}
   ],
