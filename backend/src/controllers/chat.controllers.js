@@ -47,18 +47,19 @@ export const deleteMessage = asyncHandler(async (req, res) => {
 
 
 export const getTeamsByUserId = asyncHandler(async (req, res) => {
-  const { userId, role } = req.params;
-
+  const { userId } = req.params;
+  const role = req.user.role;
+  
   try {
-    if (!mongoose.Types.ObjectId.isValid(userId)) throw new ApiError(400, "Invalid user id");
-
-    if (role !== "student" && role !== "mentor") throw new ApiError(400, "Invalid role");
-
-    const teams = await Team.find({ "members.user": userId, role: role })
-        .populate("teams")
+      if (!mongoose.Types.ObjectId.isValid(userId)) throw new ApiError(400, "Invalid user id");
+      
+      if (role !== "student" && role !== "mentor") throw new ApiError(400, "Invalid role");
+      
+      const teams = await Team.find({$or: [{ "members.user": userId },
+        { mentor: userId }]})
         .populate("members.user")
-        .populate("mentor")
-
+        .populate("mentor");
+      
     if (!teams) throw new ApiError(404, "Teams not found");
     
     return res.status(200).json(new ApiResponse(200, teams, "Teams fetched successfully"));

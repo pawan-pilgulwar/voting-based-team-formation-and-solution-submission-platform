@@ -37,6 +37,12 @@ export const fetchTeamById = async (teamId: string): Promise<Team> => {
   return res.data?.data || res.data;
 };
 
+// Chats
+export const chatList = async (userId: string): Promise<Team[]> => {
+  const res = await api.get(`/api/v1/chat/chatlist/${userId}`);
+  return res.data?.data || res.data || [];
+};
+
 // Organization
 export const createProblem = async (payload: {
   title: string;

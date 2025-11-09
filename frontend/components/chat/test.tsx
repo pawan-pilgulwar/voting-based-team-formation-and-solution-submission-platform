@@ -53,21 +53,37 @@ export default function FloatingChat() {
             <CardTitle className="text-lg">Team Chat</CardTitle>
             <div className="text-xs text-muted-foreground">Select a team to view messages</div>
           </CardHeader>
-          <Separator/>
           <CardContent>
-            <div className="h-[calc(85vh-200px)] overflow-y-auto pr-2 space-y-2">
+            {/* <div className="flex gap-2 mb-2">
+              <Input
+                placeholder="Enter Team ID"
+                value={activeTeamId ?? ""}
+                onChange={(e) => setActiveTeamId(e.target.value)}
+              />
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (activeTeamId) fetchTeamMessages(activeTeamId);
+                }}
+              >
+                Load
+              </Button>
+            </div> */}
+            <Separator className="my-1" />
+            <div className="h-64 overflow-y-auto pr-2 space-y-2">
               {loading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {!loading && chatList.length === 0 && (
-                <div className="text-sm text-muted-foreground">No teams found</div>
+              {!loading && chats.length === 0 && (
+                <div className="text-sm text-muted-foreground">No messages yet.</div>
               )}
-              {chatList.map((c) => (
-                <div key={c._id} className="text-sm bg-primary-foreground mb-2 px-2 py-1 rounded-md">
-                  <div className="font-medium mr-2">{c.name}</div>
-                  <div className="text-muted-foreground">{new Date(c.createdAt || '').toLocaleString()}</div>
+              {chats.map((c) => (
+                <div key={c._id} className="text-sm">
+                  <span className="font-medium mr-2">{c.role}</span>
+                  <span className="text-muted-foreground">{new Date(c.createdAt || '').toLocaleString()}</span>
+                  <div>{c.text}</div>
                 </div>
               ))}
             </div>
-            {/* <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3">
               <Input
                 placeholder="Type a message"
                 value={message}
@@ -89,7 +105,7 @@ export default function FloatingChat() {
               >
                 Send
               </Button>
-            </div> */}
+            </div>
           </CardContent>
         </Card>
       )} 
