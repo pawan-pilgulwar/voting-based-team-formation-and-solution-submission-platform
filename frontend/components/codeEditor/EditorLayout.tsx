@@ -6,10 +6,34 @@ import { CodeEditor } from "@/components/codeEditor/CodeEditor";
 import { OutputConsole } from "@/components/codeEditor/OutputConsole";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
+import axios from "axios";
 
 interface EditorLayoutProps {
   teamId: string;
   problemId: string;
+}
+
+const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions";
+
+const LANGUAGE_IDS: Record<string, number> = {
+  javascript: 63,
+  python: 71,
+  java: 62,
+  cpp: 54,
+  c: 50,
+};
+
+interface RunResult {
+  stdout?: string | null;
+  stderr?: string | null;
+  compile_output?: string | null;
+  message?: string | null;
+  time?: string;
+  memory?: number;
+  status?: {
+    id: number;
+    name: string;
+  };
 }
 
 export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
@@ -17,6 +41,7 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
   const [output, setOutput] = useState("");
   const [executionTime, setExecutionTime] = useState("");
   const [executionStatus, setExecutionStatus] = useState<"success" | "error" | "running" | "idle">("idle");
+  const [loading, setLoading] = useState(false);
 
   const handleFileSelect = (file: any) => {
     setSelectedFile({
@@ -47,18 +72,52 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
   };
 
   const handleRunCode = async (code: string, language: string) => {
+    setLoading(true);
     setExecutionStatus("running");
     setOutput("Running code...\n");
     toast.info("Executing code...");
 
-    // Simulate API call
-    setTimeout(() => {
-      const mockOutput = `> Executing ${language} code...\n\nHello World!\nSum: 15\n\n> Process finished with exit code 0`;
-      setOutput(mockOutput);
-      setExecutionTime("234ms");
-      setExecutionStatus("success");
-      toast.success("Code executed successfully!");
-    }, 1500);
+    try {
+      const response = await axios.post<RunResult>(
+        `${JUDGE0_URL}?base64_encoded=false&wait=true`,
+        {
+          language_id: LANGUAGE_IDS[language],
+          source_code: code,
+          stdin: "",
+        },
+        {
+          headers: {
+            "content-type": "application/json",
+            "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY!,
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+          },
+        }
+      );
+      const data = response.data;
+      if (data.status && data.status.id >= 3) {
+        setOutput(data.stdout || data.stderr || data.compile_output || "Program finished with no output.");
+        setExecutionStatus("success");
+        setLoading(false);
+        toast.success("Code executed successfully!");
+      } else {
+        setOutput("⏳ Processing your code...");
+        setExecutionStatus("running");
+        setTimeout(() => handleRunCode(code, language), 1000);
+      }
+    } catch (error) {
+      console.error("Error running code:", error);
+      toast.error("Failed to run code");
+      setExecutionStatus("error");
+    } finally {
+      setLoading(false);
+    }
+    // setTimeout(() => {
+    //   const mockOutput = `> Executing ${language} code...\n\nHello World!\n\n> Process finished with exit code 0`;
+    //   setOutput(mockOutput);
+    //   setExecutionTime("234ms");
+    //   setExecutionStatus("success");
+    //   toast.success("Code executed successfully!");
+    // }, 1500);
   };
 
   return (
@@ -81,6 +140,13 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
           onRun={handleRunCode}
           activeFile={selectedFile}
         />
+        {/* <Editor
+          height="70vh"
+          defaultLanguage={selectedFile?.language || "javascript"}
+          value={selectedFile?.content || ""}
+          onChange={(value) => setSelectedFile({ ...selectedFile, content: value || "" })}
+          theme="vs-dark"
+        /> */}
       </ResizablePanel>
       
       <ResizableHandle withHandle className="bg-border" />

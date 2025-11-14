@@ -21,6 +21,11 @@ const ChatMessageSchema = new Schema({
     enum: ["student", "mentor", "organization", "admin"], 
     required: true 
 },
+  deletedFor: [{
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    index: true,
+  }],
   createdAt: { 
     type: Date, 
     default: Date.now 

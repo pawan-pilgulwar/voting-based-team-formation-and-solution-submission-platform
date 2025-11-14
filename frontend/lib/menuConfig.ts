@@ -30,7 +30,6 @@ export const roleMenus: RoleMenuConfig = {
     { title: "Teams", url: "/teams", icon: Users },
     { title: "Projects", url: "/projects", icon: Folder },
     { title: "Profile", url: "/profile", icon: UserCircle },
-    { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Setting", url: `/setting`, icon: Settings2}
   ],
   mentor: [
@@ -39,13 +38,13 @@ export const roleMenus: RoleMenuConfig = {
     { title: "Problems", url: "/problems", icon: Swords },
     { title: "Submissions", url: "/mentor/submissions", icon: FileText },
     { title: "Profile", url: "/profile", icon: UserCircle },
-    { title: "Chat", url: "/chat", icon: MessageSquare },
-    { title: "Setting", url: `/setting`, icon: Settings2}
+    { title: "Setting", url: `/setting`, icon: Settings2},
+    { title: "Teams", url: "/teams", icon: Users },
   ],
   organization: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Hosted Problems", url: "/problems/hostproblem", icon: Swords },
-    { title: "Reports", url: "/org/reports", icon: BarChart3 },
+    { title: "Your Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Setting", url: `/setting`, icon: Settings2}

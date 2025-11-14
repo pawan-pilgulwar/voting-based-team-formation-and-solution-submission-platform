@@ -46,7 +46,6 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
     const load = async () => {
       try {
         const data = await getTeamCodeFiles(teamId);
-        // Expecting data like [{ path: "src/main.py", content?: string, updatedAt?: string }, ...]
         const nodes = buildTreeFromPaths((data || []).map((f: any) => ({ path: f.path, lastModified: f.updatedAt })));
         setFiles(nodes);
       } catch (e) {
@@ -62,7 +61,6 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
     };
     load();
   }, [teamId]);
-
   const buildTreeFromPaths = (items: Array<{ path: string; lastModified?: string }>): FileNode[] => {
     const root: Record<string, any> = {};
     items.forEach((it, idx) => {
@@ -305,6 +303,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
       <div className="p-3 border-t border-border text-xs text-muted-foreground">
         Team: {teamId} | Problem: {problemId}
       </div>
+
     </div>
   );
 };

@@ -1,8 +1,6 @@
 "use client";
 
-import { Moon, Sun, Code2, Users, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { Code2, Users } from "lucide-react";
 
 interface EditorHeaderProps {
   teamId: string;
@@ -11,16 +9,6 @@ interface EditorHeaderProps {
 }
 
 export const EditorHeader = ({ teamId, problemId, teamName = "Team Alpha" }: EditorHeaderProps) => {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
-
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4">
       <div className="flex items-center gap-3">
@@ -33,15 +21,6 @@ export const EditorHeader = ({ teamId, problemId, teamName = "Team Alpha" }: Edi
           <Users className="h-4 w-4" />
           <span>{teamName}</span>
         </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
-          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-        </Button>
-        <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4" />
-        </Button>
       </div>
     </header>
   );

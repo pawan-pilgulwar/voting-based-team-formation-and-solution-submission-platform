@@ -3,21 +3,23 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { CodeFile } from "../models/codefiles.model.js";
+import vm from "node:vm";
+import { spawn } from "node:child_process";
 
 // POST /api/v1/code/save
 export const saveCode = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
-  const { teamId, filename, language, content } = req.body;
+  const { teamId, filename, language, content, path = "", type = "file" } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(teamId)) {
     throw new ApiError(400, "Invalid team id");
   }
 
-  if (!filename || !path) {
+  if (!filename && type === "file") {
     throw new ApiError(400, "File/folder name and path are required");
   }
 
-  if (!language) {
+  if (type === "file" && !language) {
     throw new ApiError(400, "language is required");
   }
 
@@ -39,11 +41,55 @@ export const saveCode = asyncHandler(async (req, res) => {
   const created = await CodeFile.create({ 
     team: teamId, 
     author: userId, 
-    filename, 
-    language, 
-    content: content ?? "" 
+    filename: filename || path,
+    language: type === "file" ? language : "plain",
+    content: type === "file" ? (content ?? "") : "",
+    path,
+    type,
   });
   return res.status(201).json(new ApiResponse(201, created, "File created"));
+});
+
+// PATCH /api/v1/code/:fileId/rename
+export const renameCodeFile = asyncHandler(async (req, res) => {
+  const { fileId } = req.params;
+  const { newFilename, newPath = "" } = req.body || {};
+  if (!mongoose.Types.ObjectId.isValid(fileId)) {
+    throw new ApiError(400, "Invalid file id");
+  }
+  if (!newFilename && newPath === undefined) {
+    throw new ApiError(400, "Nothing to update");
+  }
+  try {
+    const file = await CodeFile.findById(fileId);
+    if (!file) throw new ApiError(404, "File or folder not found");
+
+    const oldFilename = file.filename;
+    const oldPath = file.path || "";
+    const oldFull = oldPath ? `${oldPath}/${oldFilename}` : oldFilename;
+
+    const updatedFilename = newFilename || oldFilename;
+    const updatedPath = (newPath !== undefined) ? newPath : oldPath;
+    const newFull = updatedPath ? `${updatedPath}/${updatedFilename}` : updatedFilename;
+
+    file.filename = updatedFilename;
+    file.path = updatedPath;
+    await file.save();
+
+    if (file.type === "folder") {
+      const prefix = `${oldFull}`;
+      const children = await CodeFile.find({ path: { $regex: `^${prefix}` } });
+      for (const child of children) {
+        const relative = child.path.slice(prefix.length);
+        child.path = `${newFull}${relative}`;
+        await child.save();
+      }
+    }
+
+    return res.json(new ApiResponse(200, file, "Renamed successfully"));
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(500, null, "Internal server error"));
+  }
 });
 
 // GET /api/v1/code/team/:teamId
@@ -64,23 +110,51 @@ export const getTeamCodeTree = asyncHandler(async (req, res) => {
   }
 
   try {
-    const files = await CodeFile.find({ team: teamId }).sort({ path: 1, name: 1 }).lean();
-  
-    // Convert flat list → nested tree
+    const files = await CodeFile.find({ team: teamId }).sort({ path: 1, filename: 1 }).lean();
+
     const buildTree = (items, parentPath = "") => {
-      return items
-        .filter((f) => f.path === parentPath)
-        .map((f) => ({
-          ...f,
-          children: buildTree(items, `${f.path}/${f.name}`),
-        }));
+      const directChildren = items.filter((f) => f.path === parentPath);
+      return directChildren.map((f) => ({
+        _id: f._id,
+        filename: f.filename,
+        type: f.type,
+        path: f.path,
+        language: f.language,
+        children: buildTree(items, `${parentPath}${parentPath ? "/" : ""}${f.filename}`),
+      }));
     };
-  
+
     const tree = buildTree(files, "");
     return res.json(new ApiResponse(200, tree, "Code file tree generated successfully"));
 
   } catch (error) {
     return res.status(500).json(new ApiResponse(500, null, "Internal server error"));
+  }
+});
+
+// POST /api/v1/code/run
+export const runCode = asyncHandler(async (req, res) => {
+  const { code, language, input = "" } = req.body || {};
+  if (!code || !language) throw new ApiError(400, "code and language are required");
+
+  try {
+    if (language === "javascript") {
+      const sandbox = { consoleOutput: "" };
+      const context = vm.createContext({
+        console: {
+          log: (...args) => {
+            sandbox.consoleOutput += args.join(" ") + "\n";
+          },
+        },
+      });
+      const script = new vm.Script(code, { timeout: 1000 });
+      script.runInContext(context, { timeout: 1000 });
+      return res.json(new ApiResponse(200, { output: sandbox.consoleOutput.trim() }));
+    }
+
+    return res.json(new ApiResponse(200, { output: `Run for ${language} is not enabled in this environment.` }));
+  } catch (e) {
+    return res.status(200).json(new ApiResponse(200, { output: String(e?.message || e) }));
   }
 });
 
@@ -100,7 +174,7 @@ export const deleteCodeFile = asyncHandler(async (req, res) => {
     // If it's a folder, delete all nested files inside
     let deleteCodeFiles = [];
     if (file.type === "folder") {
-      const prefix = `${file.path}/${file.name}`;
+      const prefix = `${file.path}${file.path ? "/" : ""}${file.filename}`;
       const deleted = await CodeFile.deleteMany({
         $or: [{ _id: fileId }, { path: { $regex: `^${prefix}` } }],
       });

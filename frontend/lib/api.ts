@@ -62,10 +62,50 @@ export const getTeamCodeFiles = async (teamId: string) => {
   return res.data?.data || res.data;
 };
 
-export const saveCode = async (payload: { teamId: string; problemId: string; path: string; content: string }) => {
+export const saveCode = async (payload: { teamId: string; filename: string; language: string; path: string; content: string; type?: "file" | "folder" }) => {
   const res = await api.post(`/api/v1/code/save`, payload, {
     headers: { "Content-Type": "application/json" },
   });
+  return res.data?.data || res.data;
+};
+
+export const getTeamCodeTree = async (teamId: string) => {
+  const res = await api.get(`/api/v1/code/team/${teamId}/tree`);
+  return res.data?.data || res.data;
+};
+
+export const runCode = async (payload: { code: string; language: string; input?: string }) => {
+  const res = await api.post(`/api/v1/code/run`, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data?.data || res.data;
+};
+
+export const deleteCodeFileApi = async (fileId: string) => {
+  const res = await api.delete(`/api/v1/code/${fileId}`);
+  return res.data?.data || res.data;
+};
+
+export const renameCodeFileApi = async (fileId: string, payload: { newFilename?: string; newPath?: string }) => {
+  const res = await api.patch(`/api/v1/code/${fileId}/rename`, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data?.data || res.data;
+};
+
+// AI
+export const getUserRecommendations = async (userId: string) => {
+  const res = await api.get(`/api/v1/ai/recommendations/user/${userId}`);
+  return res.data?.data || res.data;
+};
+
+export const getMentorRecommendations = async (mentorId: string) => {
+  const res = await api.get(`/api/v1/ai/recommendations/mentor/${mentorId}`);
+  return res.data?.data || res.data;
+};
+
+export const getOrgRecommendations = async (orgId: string) => {
+  const res = await api.get(`/api/v1/ai/recommendations/org/${orgId}`);
   return res.data?.data || res.data;
 };
 

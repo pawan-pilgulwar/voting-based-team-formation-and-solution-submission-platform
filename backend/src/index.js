@@ -20,6 +20,9 @@ connectDB()
         }
     });
 
+    // Attach io to app for access in route handlers/controllers
+    app.set("io", io);
+
     io.of(/^\/team\/.+$/).on("connection", (socket) => {
         // Namespace pattern like /team/:id
         const namespace = socket.nsp;

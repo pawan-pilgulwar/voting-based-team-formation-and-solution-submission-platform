@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Play, Clock, X, Send } from "lucide-react";
 import { toast } from "sonner";
 import { saveCode, submitSolution } from "@/lib/api";
+import Editor from "@monaco-editor/react";
 
 interface EditorFile {
   id: string;
@@ -66,11 +67,13 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
     );
 
     try {
-      await saveCode({
+      const res =await saveCode({
         teamId,
-        problemId,
-        path: currentFile.path,
+        filename: currentFile.name,
+        language: currentFile.language,
+        path: currentFile.path.substring(0, currentFile.path.lastIndexOf("/")) || "",
         content: code,
+        type: "file",
       });
       toast.success(`Saved ${currentFile.name}`);
     } catch (e: any) {
@@ -124,17 +127,17 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
 
   return (
     <div className="h-full flex flex-col bg-editor-bg">
-      <div className="flex items-center justify-between p-2 border-b border-panel-border bg-panel-bg">
+      <div className="flex items-center justify-between p-2.5 border-b border-panel-border bg-panel-bg">
         <div className="flex items-center gap-2">
           <Button variant="default" size="sm" className="h-8" onClick={handleSave}>
             <Save className="h-3.5 w-3.5 mr-1.5" />
             Save
           </Button>
-          <Button variant="default" size="sm" className="h-8 bg-status-success hover:bg-status-success/90" onClick={handleRun}>
+          <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleRun}>
             <Play className="h-3.5 w-3.5 mr-1.5" />
             Run
           </Button>
-          <Button variant="default" size="sm" className="h-8 bg-primary/90" onClick={handleSubmit}>
+          <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleSubmit}>
             <Send className="h-3.5 w-3.5 mr-1.5" />
             Submit
           </Button>
@@ -173,7 +176,21 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
           {openFiles.map((file) => (
             <TabsContent key={file.id} value={file.id} className="flex-1 m-0 p-0">
               <div className="h-full flex flex-col">
-                <textarea
+                <Editor
+                  height="70vh"
+                  defaultLanguage={file?.language || "javascript"}
+                  value={file?.content || ""}
+                  onChange={(value: string | undefined) => {
+                    setCode(value || "");
+                    setOpenFiles(
+                      openFiles.map((f) =>
+                        f.id === activeTab ? { ...f, content: value || "" } : f
+                      )
+                    );
+                  }}
+                  theme="vs-dark"
+                />
+                {/* <textarea
                   value={code}
                   onChange={(e) => {
                     setCode(e.target.value);
@@ -190,7 +207,7 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
                     lineHeight: "1.6",
                     tabSize: 4,
                   }}
-                />
+                /> */}
               </div>
             </TabsContent>
           ))}

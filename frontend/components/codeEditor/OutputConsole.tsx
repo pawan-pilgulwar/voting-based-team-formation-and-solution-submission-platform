@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Trash2, Terminal, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -12,10 +11,9 @@ interface OutputConsoleProps {
 }
 
 export const OutputConsole = ({ output, executionTime, status = "idle" }: OutputConsoleProps) => {
-  const [consoleOutput] = useState(output);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(consoleOutput);
+    navigator.clipboard.writeText(output || "");
     toast.success("Output copied to clipboard");
   };
 
@@ -51,7 +49,7 @@ export const OutputConsole = ({ output, executionTime, status = "idle" }: Output
 
   return (
     <div className="h-full flex flex-col bg-panel-bg border-l border-panel-border">
-      <div className="flex items-center justify-between p-2 border-b border-panel-border">
+      <div className="flex items-center justify-between p-3 border-b border-panel-border">
         <div className="flex items-center gap-2">
           <div className={`flex items-center gap-2 ${getStatusColor()}`}>
             {getStatusIcon()}
@@ -74,9 +72,9 @@ export const OutputConsole = ({ output, executionTime, status = "idle" }: Output
       </div>
 
       <div className="flex-1 overflow-auto p-4">
-        {consoleOutput ? (
+        {output ? (
           <pre className="font-mono text-sm text-foreground whitespace-pre-wrap break-words">
-            {consoleOutput}
+            {output}
           </pre>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">

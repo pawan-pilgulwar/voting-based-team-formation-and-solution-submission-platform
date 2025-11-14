@@ -66,3 +66,36 @@ export const recommendForMentor = asyncHandler(async (req, res) => {
   scoredTeams.sort((a, b) => b.score - a.score);
   return res.json(new ApiResponse(200, { teams: scoredTeams.slice(0, 10) }));
 });
+
+export const recommendForOrg = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    const org = await User.findById(id).lean();
+    if (!org || org.role !== "organization") throw new ApiError(404, "Organization not found");
+
+    const orgProblems = await Problem.find({ postedBy: id, status: { $in: ["open", "in-progress"] } }).lean();
+    const problemMap = new Map(orgProblems.map((p) => [String(p._id), p]));
+
+    const teams = await Team.find({ problem: { $in: orgProblems.map((p) => p._id) } })
+      .populate("problem")
+      .lean();
+
+    const orgVec = await getEmbeddingVector(org.bio || "", org.skills || []);
+
+    const scored = await Promise.all(
+      teams.map(async (t) => {
+        const p = t.problem || problemMap.get(String(t.problem));
+        const summary = `${t.name} ${p?.title || ""} ${p?.description || ""}`;
+        const tags = p?.tags || [];
+        const tVec = await getEmbeddingVector(summary, tags);
+        const score = computeSimilarity(orgVec, tVec);
+        return { team: t, problem: p, score };
+      })
+    );
+
+    scored.sort((a, b) => b.score - a.score);
+    return res.json(new ApiResponse(200, { teams: scored.slice(0, 10) }));
+  } catch (error) {
+    return res.status(500).json(new ApiError(500, "Internal Server Error"));
+  }
+});
