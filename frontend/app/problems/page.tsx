@@ -17,6 +17,7 @@ export default function ProblemsListPage() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { voteCounts, getVoteCount, castVote, hasVoted, loading: voting } = useVote();
+  const [showMine, setShowMine] = useState(false);
 
   const updateVoteCount = (problemId: string) => {
     castVote(problemId);
@@ -28,6 +29,12 @@ export default function ProblemsListPage() {
       )
     );
   }
+
+  const filteredProblems = showMine && user ? problems.filter((p) => {
+    const postedBy = (p as any).postedBy;
+    if (!postedBy || typeof postedBy === "string") return false;
+    return postedBy._id === user._id;
+  }) : problems;
 
   useEffect(() => {
     const load = async () => {
@@ -85,15 +92,24 @@ export default function ProblemsListPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Problems</h1>
           <p className="text-muted-foreground">Explore community and organization posted problems.</p>
         </div>
+        {user && (user.role === "organization" || user.role === "admin") && (
+          <Button
+            variant={showMine ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowMine((v) => !v)}
+          >
+            {showMine ? "Showing: My Problems" : "Showing: All Problems"}
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {problems.map((p) => (
+        {filteredProblems.map((p) => (
           <Card key={p._id}>
             <CardHeader>
               <div className="flex items-start justify-between gap-2">
@@ -109,13 +125,19 @@ export default function ProblemsListPage() {
                   <Link href={`/problems/${p._id}`}>
                     <Button variant="secondary">Details</Button>
                   </Link>
-                  {user?.role === "student" && <Button
-                    onClick={() => updateVoteCount(p._id)}
-                    disabled={!user || p.hasVoted || (p.voteCount ?? 0) >= 6 || voting}
-                  >
-                    {p.hasVoted ? "Voted" : voting ? "Voting..." : "Vote"}
-                  </Button>
-                  }
+                  {user && (user.role === "organization" || user.role === "admin") && (
+                    <Link href={`/problems/${p._id}#solutions-section`}>
+                      <Button variant="outline">Solutions</Button>
+                    </Link>
+                  )}
+                  {user?.role === "student" && (
+                    <Button
+                      onClick={() => updateVoteCount(p._id)}
+                      disabled={!user || p.hasVoted || (p.voteCount ?? 0) >= 6 || voting}
+                    >
+                      {p.hasVoted ? "Voted" : voting ? "Voting..." : "Vote"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Copy, Trash2, Terminal, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -8,9 +9,19 @@ interface OutputConsoleProps {
   output: string;
   executionTime?: string;
   status?: "success" | "error" | "running" | "idle";
+  input?: string;
+  onInputChange?: (value: string) => void;
+  onClear?: () => void;
 }
 
-export const OutputConsole = ({ output, executionTime, status = "idle" }: OutputConsoleProps) => {
+export const OutputConsole = ({
+  output,
+  executionTime,
+  status = "idle",
+  input = "",
+  onInputChange,
+  onClear,
+}: OutputConsoleProps) => {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(output || "");
@@ -18,6 +29,9 @@ export const OutputConsole = ({ output, executionTime, status = "idle" }: Output
   };
 
   const handleClear = () => {
+    if (onClear) {
+      onClear();
+    }
     toast.success("Console cleared");
   };
 
@@ -85,6 +99,21 @@ export const OutputConsole = ({ output, executionTime, status = "idle" }: Output
             </div>
           </div>
         )}
+      </div>
+
+      <div className="border-t border-b border-panel-border p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-muted-foreground">Standard input</span>
+          {status === "running" && (
+            <span className="text-[10px] text-status-info">Running...</span>
+          )}
+        </div>
+        <Textarea
+          value={input}
+          onChange={(e) => onInputChange && onInputChange(e.target.value)}
+          className="h-20 text-xs font-mono"
+          placeholder="Type input for your program here..."
+        />
       </div>
 
       {status === "error" && (

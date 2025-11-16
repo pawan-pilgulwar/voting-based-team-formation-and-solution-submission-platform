@@ -42,6 +42,7 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
   const [executionTime, setExecutionTime] = useState("");
   const [executionStatus, setExecutionStatus] = useState<"success" | "error" | "running" | "idle">("idle");
   const [loading, setLoading] = useState(false);
+  const [stdin, setStdin] = useState("");
 
   const handleFileSelect = (file: any) => {
     setSelectedFile({
@@ -83,7 +84,7 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
         {
           language_id: LANGUAGE_IDS[language],
           source_code: code,
-          stdin: "",
+          stdin,
         },
         {
           headers: {
@@ -96,6 +97,9 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
       const data = response.data;
       if (data.status && data.status.id >= 3) {
         setOutput(data.stdout || data.stderr || data.compile_output || "Program finished with no output.");
+        if (data.time) {
+          setExecutionTime(`${data.time}s`);
+        }
         setExecutionStatus("success");
         setLoading(false);
         toast.success("Code executed successfully!");
@@ -111,13 +115,6 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
     } finally {
       setLoading(false);
     }
-    // setTimeout(() => {
-    //   const mockOutput = `> Executing ${language} code...\n\nHello World!\n\n> Process finished with exit code 0`;
-    //   setOutput(mockOutput);
-    //   setExecutionTime("234ms");
-    //   setExecutionStatus("success");
-    //   toast.success("Code executed successfully!");
-    // }, 1500);
   };
 
   return (
@@ -140,13 +137,6 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
           onRun={handleRunCode}
           activeFile={selectedFile}
         />
-        {/* <Editor
-          height="70vh"
-          defaultLanguage={selectedFile?.language || "javascript"}
-          value={selectedFile?.content || ""}
-          onChange={(value) => setSelectedFile({ ...selectedFile, content: value || "" })}
-          theme="vs-dark"
-        /> */}
       </ResizablePanel>
       
       <ResizableHandle withHandle className="bg-border" />
@@ -156,6 +146,13 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
           output={output}
           executionTime={executionTime}
           status={executionStatus}
+          input={stdin}
+          onInputChange={setStdin}
+          onClear={() => {
+            setOutput("");
+            setExecutionTime("");
+            setExecutionStatus("idle");
+          }}
         />
       </ResizablePanel>
     </ResizablePanelGroup>

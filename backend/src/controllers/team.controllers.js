@@ -99,7 +99,7 @@ export const getAllTeams = asyncHandler(async (req, res) => {
     if (studentId) filter.members.user = studentId;
 
     const teams = await Team.find(filter)
-    .populate("problem")
+    .populate({path: "problem", select: "_id title postedBy"})
     .populate("members.user")
     .populate("mentor");
     
@@ -119,11 +119,9 @@ export const getTeamById = asyncHandler(async (req, res) => {
   const { teamId } = req.params;
 
   const team = await Team.findById(teamId)
-    .populate("problem")
+    .populate({path: "problem", select: "_id title postedBy"})
     .populate("members.user")
     .populate("mentor");
-
-    console.log(team);
 
   if (!team) throw new ApiError(404, "Team not found");
 

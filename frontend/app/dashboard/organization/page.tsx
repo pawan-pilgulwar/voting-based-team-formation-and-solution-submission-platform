@@ -47,15 +47,15 @@ export default function OrganizationDashboardPage() {
       <section className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Manage Hosted Challenges</CardTitle>
-            <CardDescription>Create and update your organization challenges</CardDescription>
+            <CardTitle>Manage Posted Problems</CardTitle>
+            <CardDescription>Create and track your organization problems</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild>
-              <Link href="#">Create Challenge</Link>
+              <Link href="/dashboard/organization/create-problem">Create Problem</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/dashboard/challenges">View All Challenges</Link>
+              <Link href="/problems">My Problems</Link>
             </Button>
           </CardContent>
         </Card>

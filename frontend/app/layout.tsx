@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/top-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Footer } from "@/components/layout/Footer";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { ChatProvider } from "@/context/ChatContext";
 import { VoteProvider } from "@/context/VoteContext";
 import FloatingChat from "@/components/chat/FloatingChat";

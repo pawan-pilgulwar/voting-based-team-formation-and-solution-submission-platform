@@ -9,8 +9,17 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVote } from "@/context/VoteContext";
 import { useAuth } from "@/context/AuthContext";
-import { fetchProblemById } from "@/lib/api";
+import { fetchProblemById, getSolutionsByProblem } from "@/lib/api";
 import type { Problem } from "@/lib/types";
+
+interface SolutionItem {
+  _id: string;
+  team: any;
+  problem: any;
+  status: "draft" | "submitted" | "under-review" | "approved" | "rejected";
+  submittedBy?: { _id: string; name?: string } | string;
+  createdAt?: string;
+}
 
 export default function ProblemDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -21,6 +30,9 @@ export default function ProblemDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { voteCounts, getVoteCount, castVote, hasVoted, loading: voting } = useVote();
+  const [solutions, setSolutions] = useState<SolutionItem[]>([]);
+  const [solutionsLoading, setSolutionsLoading] = useState(false);
+  const [solutionsError, setSolutionsError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -38,7 +50,25 @@ export default function ProblemDetailsPage() {
       }
     };
     load();
-  }, []);
+  }, [id]);
+
+  useEffect(() => {
+    const loadSolutions = async () => {
+      if (!id) return;
+      if (!user || (user.role !== "organization" && user.role !== "admin")) return;
+      try {
+        setSolutionsLoading(true);
+        setSolutionsError(null);
+        const data = await getSolutionsByProblem(id);
+        setSolutions(Array.isArray(data) ? data : []);
+      } catch (e: any) {
+        setSolutionsError(e?.message || "Failed to load solutions");
+      } finally {
+        setSolutionsLoading(false);
+      }
+    };
+    loadSolutions();
+  }, [id]);
 
   if (loading) {
     return (
@@ -70,25 +100,197 @@ export default function ProblemDetailsPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={() => castVote(id)}
-            disabled={!user || hasVoted[id] || voting}
-          >
-            {hasVoted[id] ? "Voted" : voting ? "Voting..." : "Vote"}
-          </Button>
-          <Button variant="secondary" onClick={() => router.push("/problems")}>Back</Button>
+          {user?.role === "student" && (
+            <Button
+              style={{zIndex: 9999 }}
+              onClick={() => castVote(id)}
+              disabled={!user || hasVoted[id] || voting}
+            >
+              {hasVoted[id] ? "Voted" : voting ? "Voting..." : "Vote"}
+            </Button>
+          )}
+          {user && (user.role === "organization" || user.role === "admin") && (
+            <Button
+              variant="outline"
+              style={{zIndex: 9999 }}
+              onClick={() => {
+                const el = document.getElementById("solutions-section");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+            >
+              Solutions
+            </Button>
+          )}
+          <Button 
+            variant="secondary" 
+            style={{zIndex: 9999 }} 
+            onClick={() => router.push("/problems")}>Back</Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Problem Description</CardTitle>
+          <CardTitle>Problem Details</CardTitle>
         </CardHeader>
         <Separator />
         <CardContent className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-          {problem.description}
+          {/* Description */}
+          {problem.description && (
+            <div>
+              <span className="font-medium text-foreground">Description:</span>{" "}
+              {problem.description}
+            </div>
+          )}
+
+          {/* Posted By */}
+          {problem.postedBy && (
+            <div>
+              <span className="font-medium text-foreground">Posted By:</span>{" "}
+              {problem.postedBy?.username} ({problem.postedBy?.email})
+            </div>
+          )}
+
+          {/* Status */}
+          {problem.status && (
+            <div>
+              <span className="font-medium text-foreground">Status:</span>{" "}
+              {problem.status}
+            </div>
+          )}
+
+          {/* Difficulty */}
+          {problem.difficulty && (
+            <div>
+              <span className="font-medium text-foreground">Difficulty:</span>{" "}
+              {problem.difficulty}
+            </div>
+          )}
+
+          {/* Tags */}
+          {problem.tags && (
+            <div>
+              <span className="font-medium text-foreground">Skills:</span>{" "}
+              {problem.tags?.length
+            ? problem.tags.join(", ")
+            : "No tags added"}
+            </div>
+          )}
+
+          {/* Deadline */}
+          {problem.deadline && (
+            <div>
+              <span className="font-medium text-foreground">Deadline:</span>{" "}
+              {problem.deadline
+                ? new Date(problem.deadline).toLocaleString()
+                : "No deadline"}
+            </div>
+          )}
+
+          {/* Created At */}
+          {user?.role == "organization" && problem.createdAt && (
+            <div>
+              <span className="font-medium text-foreground">Created At:</span>{" "}
+              {new Date(problem.createdAt).toLocaleString()}
+            </div>
+          )}
+
+          {user?.role == "organization" && problem.updatedAt && (
+            <div>
+              <span className="font-medium text-foreground">Updated At:</span>{" "}
+              {new Date(problem.updatedAt).toLocaleString()}
+            </div>
+          )}
+
+          {/* Vote Count */}
+          {problem.voteCount && (
+            <div>
+              <span className="font-medium text-foreground">Total Votes:</span>{" "}
+              {problem.voteCount}
+            </div>
+          )}
+
+          {/* You Have Voted */}
+          {user?.role == "student" && problem.hasVoted && (
+            <div>
+              <span className="font-medium text-foreground">You Voted:</span>{" "}
+              {problem.hasVoted ? "Yes" : "No"}
+            </div>
+          )}
+
+          {/* Selected Teams */}
+          {user?.role == "organization" && problem.selectedTeams && (
+            <div>
+              <span className="font-medium text-foreground">Selected Teams:</span>{" "}
+              {problem.selectedTeams?.length
+                ? problem.selectedTeams.map((t: any) => t.name).join(", ")
+                : "No teams yet"}
+            </div>
+          )}
+
+          {/* Votes Array */}
+          {user?.role == "organization" && problem.votes && (
+            <div>
+              <span className="font-medium text-foreground">Votes List:</span>{" "}
+              {problem.votes?.length
+                ? problem.votes.map((v: any) => v.user?.username || v.user).join(", ")
+                : "No votes"}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {user && (user.role === "organization" || user.role === "admin") && (
+        <Card id="solutions-section">
+          <CardHeader>
+            <CardTitle>Submitted Solutions</CardTitle>
+          </CardHeader>
+          <Separator />
+          <CardContent className="space-y-4">
+            {solutionsLoading && <p className="text-sm text-muted-foreground">Loading solutions...</p>}
+            {solutionsError && !solutionsLoading && (
+              <p className="text-sm text-red-500">{solutionsError}</p>
+            )}
+            {!solutionsLoading && !solutionsError && solutions.length === 0 && (
+              <p className="text-sm text-muted-foreground">No solutions have been submitted yet.</p>
+            )}
+            {!solutionsLoading && !solutionsError && solutions.length > 0 && (
+              <div className="space-y-3">
+                {solutions.map((s) => {
+                  const team = s.team as any;
+                  const teamName = typeof team === "string" ? team : team?.name || team?._id;
+                  const members =
+                    team && Array.isArray(team.members)
+                      ? team.members
+                          .map((m: any) => m?.user?.name || m?.user?.email || "Member")
+                          .join(", ")
+                      : null;
+                  const submittedBy =
+                    typeof s.submittedBy === "string"
+                      ? s.submittedBy
+                      : s.submittedBy?.name || s.submittedBy?._id;
+                  return (
+                    <div key={s._id} className="border rounded-md p-3 text-sm space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">Team: {teamName}</div>
+                        <div className="text-xs capitalize text-muted-foreground">Status: {s.status}</div>
+                      </div>
+                      {members && (
+                        <div className="text-xs text-muted-foreground">Members: {members}</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Submitted by: {submittedBy}
+                        {s.createdAt && ` • ${new Date(s.createdAt).toLocaleString()}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

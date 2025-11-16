@@ -70,13 +70,20 @@ export default function TeamDetailPage() {
           <p className="text-muted-foreground">Team overview, members and actions</p>
         </div>
         <div className="flex gap-2">
-          {team.problem && (
+          {team.problem && user?.role === "student" && (
             <Link href={`/editor/${typeof team.problem === "string" ? team.problem : team.problem._id}/${team._id}`}>
-              <Button>Open Editor</Button>
+              <Button style={{zIndex: 9999, position: "relative"}}>Open Editor</Button>
             </Link>
           )}
+
+          {user?.role === "organization" && (
+            <Link href={`/problems/${typeof team.problem === "string" ? team.problem : team.problem._id}/#solutions-section`}>
+              <Button style={{zIndex: 9999, position: "relative"}}>Manage Solutions</Button>
+            </Link>
+          )}
+
           {isLeader && (
-            <Button variant="outline">Edit Team Info</Button>
+            <Button style={{zIndex: 9999, position: "relative"}} variant="outline">Edit Team Info</Button>
           )}
         </div>
       </div>

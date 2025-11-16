@@ -100,15 +100,11 @@ export const getProblemById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Problem not found");
   }
 
-  const enrichedProblem = await Promise.all(
-    [problem].map(async (p) => {
-      return {
-        ...p.toObject(),
-        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
-        voteCount: p.getVoteCount(),
-      };
-    })
-  );
+  const enrichedProblem = {
+    ...problem.toObject(),
+    hasVoted: req.user ? await problem.hasVoted(req.user._id) : false,
+    voteCount: problem.getVoteCount(),
+  };
 
   return res
     .status(200)
@@ -133,15 +129,11 @@ export const updateProblem = asyncHandler(async (req, res) => {
   Object.assign(problem, updates);
   await problem.save();
 
-  const enrichedProblem = await Promise.all(
-    [problem].map(async (p) => {
-      return {
-        ...p.toObject(),
-        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
-        voteCount: p.getVoteCount(),
-      };
-    })
-  );
+  const enrichedProblem = {
+    ...problem.toObject(),
+    hasVoted: req.user ? await problem.hasVoted(req.user._id) : false,
+    voteCount: problem.getVoteCount(),
+  };
 
   return res
     .status(200)

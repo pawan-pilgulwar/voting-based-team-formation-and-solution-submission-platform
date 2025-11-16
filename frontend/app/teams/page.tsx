@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 import { fetchTeams } from "@/lib/api";
 import type { Team } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const load = async () => {
@@ -18,7 +20,15 @@ export default function TeamsPage() {
       setError(null);
       try {
         const data = await fetchTeams();
-        setTeams(data);
+        if(user?.role === "student") {
+          const filteredData = data.filter((t) => t.members?.some((m) => m.user._id === user._id));
+          setTeams(filteredData);
+        } else if(user?.role === "organization") {
+          const filteredData = data.filter((t) => t.problem?.postedBy === user._id);
+          setTeams(filteredData);
+        } else {
+          setTeams(data);
+        }
       } catch (e: any) {
         setError(e?.message || "Failed to load teams");
       } finally {
@@ -66,9 +76,15 @@ export default function TeamsPage() {
                   <Link href={`/teams/${t._id}`}>
                     <Button variant="outline" size="sm">Open</Button>
                   </Link>
-                  {t.problem && (
+                  {t.problem && user?.role === "student" && (
                     <Link href={`/editor/${typeof t.problem === "string" ? t.problem : t.problem._id}/${t._id}`}>
                       <Button size="sm">Editor</Button>
+                    </Link>
+                  )}
+
+                  {t.problem && user?.role === "organization" && (
+                    <Link href={`/problems/${typeof t.problem === "string" ? t.problem : t.problem._id}`}>
+                      <Button size="sm">Solutions</Button>
                     </Link>
                   )}
                 </div>

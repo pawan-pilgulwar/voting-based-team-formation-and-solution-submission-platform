@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Solution } from "../models/solutions.model.js";
 import { Team } from "../models/teams.model.js";
 import { Problem } from "../models/problems.model.js";
+import { CodeFile } from "../models/codefiles.model.js";
 
 // POST /api/v1/solutions/submit
 export const submitSolution = asyncHandler(async (req, res) => {
@@ -184,8 +185,15 @@ export const getSolutionsByProblemId = asyncHandler(async (req, res) => {
   }
   try {
     const solutions = await Solution.find({ problem: problemId })
-        .populate("team submittedBy files")
-        .lean();
+      .populate({
+        path: "team",
+        populate: {
+          path: "members.user",
+          select: "name email username",
+        },
+      })
+      .populate("submittedBy files")
+      .lean();
     return res.json(new ApiResponse(200, solutions, "Solutions retrieved"));
   } catch (error) {
     return res

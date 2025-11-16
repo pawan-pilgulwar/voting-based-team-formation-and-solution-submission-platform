@@ -14,6 +14,16 @@ export interface Problem {
   votes?: string[];
   hasVoted?: boolean;
   voteCount?: number;
+  status?: "open" | "in-progress" | "completed" | "archived";
+  deadline?: string;
+  postedBy?: {
+    _id: string;
+    username?: string;
+    email?: string;
+    name?: string;
+    organizationName?: string;
+  };
+  selectedTeams?: Team[];
 }
 
 export interface VoteCount {
@@ -31,7 +41,11 @@ export interface Team {
   name: string;
   leader: TeamMember | null;
   members: TeamMember[];
-  problem: string | Problem;
+  problem: {
+    _id: string;
+    title: string;
+    postedBy: string;
+  };
   createdAt?: string;
 }
 

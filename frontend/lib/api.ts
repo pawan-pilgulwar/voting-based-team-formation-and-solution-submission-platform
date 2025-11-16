@@ -114,6 +114,7 @@ export const submitSolution = async (payload: { teamId: string; problemId: strin
   const res = await api.post(`/api/v1/solution/submit`, payload, {
     headers: { "Content-Type": "application/json" },
   });
+  console.log(res.data);
   return res.data?.data || res.data;
 };
 

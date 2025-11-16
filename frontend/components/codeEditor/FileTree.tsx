@@ -41,6 +41,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState<"file" | "folder">("file");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [targetPath, setTargetPath] = useState<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -113,21 +114,23 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
       return;
     }
 
+    const basePath = targetPath || "";
+
     const newItem: FileNode = {
       id: Date.now().toString(),
       name: newItemName,
       type: newItemType,
-      path: selectedFolder ? `${selectedFolder.path}/${newItemName}` : newItemName,
+      path: basePath ? `${basePath}/${newItemName}` : newItemName,
       children: newItemType === "folder" ? [] : undefined,
       lastModified: "just now",
     };
 
     const addItemToTree = (nodes: FileNode[]): FileNode[] => {
-      if (!selectedFolder) {
+      if (!basePath) {
         return [...nodes, newItem];
       }
       return nodes.map((node) => {
-        if (node.id === selectedFolder.id) {
+        if (node.type === "folder" && node.path === basePath) {
           return {
             ...node,
             children: [...(node.children || []), newItem],
@@ -198,6 +201,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
             onClick={() => {
               if (isFolder) {
                 setSelectedFolder(node);
+                setTargetPath(node.path);
                 toggleExpanded(node.id);
               } else {
                 onFileSelect(node);
@@ -243,7 +247,15 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
         <div className="flex gap-1">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setNewItemType("file")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => {
+                  setNewItemType("file");
+                  setTargetPath(selectedFolder?.path || "");
+                }}
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </DialogTrigger>
@@ -251,8 +263,8 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
               <DialogHeader>
                 <DialogTitle>Create New {newItemType === "file" ? "File" : "Folder"}</DialogTitle>
                 <DialogDescription>
-                  {selectedFolder
-                    ? `Create in: ${selectedFolder.path}`
+                  {targetPath
+                    ? `Create in: ${targetPath}`
                     : "Create in root directory"}
                 </DialogDescription>
               </DialogHeader>
@@ -267,6 +279,36 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
                   >
                     <option value="file">File</option>
                     <option value="folder">Folder</option>
+                  </select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="location">Location</Label>
+                  <select
+                    id="location"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
+                    value={targetPath}
+                    onChange={(e) => setTargetPath(e.target.value)}
+                  >
+                    <option value="">Root directory</option>
+                    {(() => {
+                      const folders: FileNode[] = [];
+                      const collect = (nodes: FileNode[]) => {
+                        nodes.forEach((n) => {
+                          if (n.type === "folder") {
+                            folders.push(n);
+                            if (n.children && n.children.length) {
+                              collect(n.children);
+                            }
+                          }
+                        });
+                      };
+                      collect(files);
+                      return folders.map((folder) => (
+                        <option key={folder.id} value={folder.path}>
+                          {folder.path}
+                        </option>
+                      ));
+                    })()}
                   </select>
                 </div>
                 <div className="grid gap-2">
