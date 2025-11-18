@@ -10,20 +10,20 @@ import { spawn } from "node:child_process";
 export const saveCode = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   const { teamId, filename, language, content, path = "", type = "file" } = req.body;
-
+  
   if (!mongoose.Types.ObjectId.isValid(teamId)) {
     throw new ApiError(400, "Invalid team id");
   }
-
+  
   if (!filename && type === "file") {
     throw new ApiError(400, "File/folder name and path are required");
   }
-
+  
   if (type === "file" && !language) {
     throw new ApiError(400, "language is required");
   }
-
-
+  
+  
   const existing = await CodeFile.findOne({ team: teamId, path, filename });
   if (existing) {
     // Update content (only if file)
@@ -37,7 +37,7 @@ export const saveCode = asyncHandler(async (req, res) => {
       return res.json(new ApiResponse(200, existing, "Folder already exists"));
     }
   }
-
+  
   const created = await CodeFile.create({ 
     team: teamId, 
     author: userId, 

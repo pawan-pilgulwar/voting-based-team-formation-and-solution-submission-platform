@@ -112,6 +112,8 @@ export default function ProfilePage() {
           role={uiRole}
           avatarUrl={user?.avatar}
           coverUrl={user?.coverImage}
+          gender={user.gender}
+          username={user?.username}
         />
         <div className="flex gap-3">
           <Dialog open={editOpen} onOpenChange={setEditOpen}>

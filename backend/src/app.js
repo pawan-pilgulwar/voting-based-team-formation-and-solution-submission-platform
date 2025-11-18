@@ -33,6 +33,7 @@ import problemRouter from "./routes/problem.routes.js";
 import teamRouter from "./routes/team.routes.js";
 import aiRouter from "./routes/ai.routes.js";
 import adminRouter from "./routes/admin.routes.js";
+import mentorRouter from "./routes/mentor.routes.js";
 // removed extended routers
 import { errorHandler } from "./middlewares/errors.middlewares.js";
 
@@ -48,7 +49,7 @@ app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/solution", solutionRouter);
 app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/admin", adminRouter);
-
+app.use("/api/v1/mentors", mentorRouter);
 
 // Error Handler Middleware
 app.use(errorHandler);

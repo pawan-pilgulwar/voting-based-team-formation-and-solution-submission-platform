@@ -22,9 +22,10 @@ interface CodeEditorProps {
   problemId: string;
   onRun: (code: string, language: string) => void;
   activeFile?: EditorFile;
+  readOnly?: boolean;
 }
 
-export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorProps) => {
+export const CodeEditor = ({ teamId, problemId, onRun, activeFile, readOnly = false }: CodeEditorProps) => {
   const [openFiles, setOpenFiles] = useState<EditorFile[]>([]);
   const [activeTab, setActiveTab] = useState<string>("");
   const [code, setCode] = useState("");
@@ -56,6 +57,7 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
   };
 
   const handleSave = async () => {
+    if (readOnly) return;
     const currentFile = openFiles.find((f) => f.id === activeTab);
     if (!currentFile) return;
 
@@ -67,12 +69,16 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
     );
 
     try {
-      const res =await saveCode({
+      const fullPath = currentFile.path || currentFile.name;
+      const lastSlashIndex = fullPath.lastIndexOf("/");
+      const parentPath = lastSlashIndex > -1 ? fullPath.slice(0, lastSlashIndex) : ".";
+
+      await saveCode({
         teamId,
         filename: currentFile.name,
         language: currentFile.language,
-        path: currentFile.path.substring(0, currentFile.path.lastIndexOf("/")) || "",
         content: code,
+        path: parentPath,
         type: "file",
       });
       toast.success(`Saved ${currentFile.name}`);
@@ -91,6 +97,7 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
   };
 
   const handleSubmit = async () => {
+    if (readOnly) return;
     const currentFile = openFiles.find((f) => f.id === activeTab);
     if (!currentFile) {
       toast.error("No file selected");
@@ -129,18 +136,28 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
     <div className="h-full flex flex-col bg-editor-bg">
       <div className="flex items-center justify-between p-2.5 border-b border-panel-border bg-panel-bg">
         <div className="flex items-center gap-2">
-          <Button variant="default" size="sm" className="h-8" onClick={handleSave}>
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            Save
-          </Button>
-          <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleRun}>
-            <Play className="h-3.5 w-3.5 mr-1.5" />
-            Run
-          </Button>
-          <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleSubmit}>
-            <Send className="h-3.5 w-3.5 mr-1.5" />
-            Submit
-          </Button>
+          {!readOnly && (
+            <>
+              <Button variant="default" size="sm" className="h-8" onClick={handleSave}>
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+                Save
+              </Button>
+              <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleRun}>
+                <Play className="h-3.5 w-3.5 mr-1.5" />
+                Run
+              </Button>
+              <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleSubmit}>
+                <Send className="h-3.5 w-3.5 mr-1.5" />
+                Submit
+              </Button>
+            </>
+          )}
+          {readOnly && (
+            <Button variant="default" size="sm" className="h-8 bg-primary/90 hover:bg-primary/80" onClick={handleRun}>
+              <Play className="h-3.5 w-3.5 mr-1.5" />
+              Run
+            </Button>
+          )}
         </div>
         {currentFile && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -189,25 +206,8 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile }: CodeEditorP
                     );
                   }}
                   theme="vs-dark"
+                  options={{ readOnly }}
                 />
-                {/* <textarea
-                  value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value);
-                    setOpenFiles(
-                      openFiles.map((f) =>
-                        f.id === activeTab ? { ...f, content: e.target.value } : f
-                      )
-                    );
-                  }}
-                  className="flex-1 w-full p-4 bg-editor-bg text-foreground font-mono text-sm resize-none outline-none"
-                  placeholder="Start coding..."
-                  spellCheck={false}
-                  style={{
-                    lineHeight: "1.6",
-                    tabSize: 4,
-                  }}
-                /> */}
               </div>
             </TabsContent>
           ))}

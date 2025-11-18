@@ -24,6 +24,8 @@ interface FileNode {
   path: string;
   children?: FileNode[];
   lastModified?: string;
+  content?: string;
+  language?: string;
 }
 
 interface FileTreeProps {
@@ -31,9 +33,10 @@ interface FileTreeProps {
   problemId: string;
   onFileSelect: (file: FileNode) => void;
   selectedFile?: FileNode;
+  readOnly?: boolean;
 }
 
-export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: FileTreeProps) => {
+export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOnly = false }: FileTreeProps) => {
   const [files, setFiles] = useState<FileNode[]>([]);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["1", "4"]));
@@ -47,7 +50,15 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
     const load = async () => {
       try {
         const data = await getTeamCodeFiles(teamId);
-        const nodes = buildTreeFromPaths((data || []).map((f: any) => ({ path: f.path, lastModified: f.updatedAt })));
+        const nodes = buildTreeFromPaths(
+          (data || []).map((f: any) => ({
+            path: normalizePath(f.path, f.filename),
+            lastModified: f.updatedAt,
+            content: f.content,
+            language: f.language,
+          }))
+        );
+        console.log(nodes)
         setFiles(nodes);
       } catch (e) {
         // Fallback to a minimal starter structure
@@ -62,7 +73,20 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
     };
     load();
   }, [teamId]);
-  const buildTreeFromPaths = (items: Array<{ path: string; lastModified?: string }>): FileNode[] => {
+
+  const normalizePath = (path: string, filename: string) => {
+  if (!path || path === "." || path === "/") return filename;
+
+  // If backend mistakenly sent full path including filename
+  if (path.endsWith(filename)) return path;
+
+  return `${path.replace(/\/+$/g, "")}/${filename}`;
+};
+
+
+  const buildTreeFromPaths = (items: Array<{ path: string; lastModified?: string; content?: string; language?: string }>): FileNode[] => {
+    const makeId = (fullPath: string) => fullPath.replace(/[\/\.]/g, "-");
+
     const root: Record<string, any> = {};
     items.forEach((it, idx) => {
       const segments = it.path.split("/").filter(Boolean);
@@ -74,11 +98,13 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
         if (!cur[seg]) {
           cur[seg] = {
             __node: {
-              id: `${idx}-${i}-${seg}`,
+              id: makeId(curPath),
               name: seg,
               type: isLeaf ? "file" : "folder",
               path: curPath,
               lastModified: isLeaf ? (it.lastModified || undefined) : undefined,
+              content: isLeaf ? (it as any).content : undefined,
+              language: isLeaf ? (it as any).language : undefined,
               children: isLeaf ? undefined : [],
             },
           };
@@ -87,13 +113,23 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
       });
     });
     const toArray = (obj: any): FileNode[] => {
-      return Object.values(obj).map((v: any) => {
-        const node: FileNode = v.__node;
-        if (node.type === "folder") {
-          node.children = toArray(v);
-        }
-        return node;
+      const data : FileNode[] = Object.values(obj)
+        .filter((v: any) => v && v.__node)
+        .map((v: any) => {
+          const node: FileNode = v.__node;
+          console.log(node);
+          if (node.type === "folder") {
+            node.children = toArray(v);
+          }
+          return node;
+        }); 
+      // SORT: folders first, files second (alphabetical inside each group)
+      data.sort((a, b) => {
+        if (a.type === "folder" && b.type === "file") return -1;
+        if (a.type === "file" && b.type === "folder") return 1;
+        return a.name.localeCompare(b.name);            // alphabetical sort
       });
+      return data;
     };
     return toArray(root);
   };
@@ -220,17 +256,19 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
             <span className="text-sm truncate text-foreground">{node.name}</span>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(node);
-            }}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          {!readOnly && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 opacity-0 group-hover:opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(node);
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
         </div>
 
         {isFolder && isExpanded && node.children && (
@@ -244,6 +282,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
     <div className="h-full flex flex-col bg-card border-r border-border">
       <div className="flex items-center justify-between p-3 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">Files</h2>
+        {!readOnly && (
         <div className="flex gap-1">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -336,6 +375,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile }: File
             <Upload className="h-4 w-4" />
           </Button>
         </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto">

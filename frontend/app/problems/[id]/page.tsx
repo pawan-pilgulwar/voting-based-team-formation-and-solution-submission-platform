@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ export default function ProblemDetailsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { voteCounts, getVoteCount, castVote, hasVoted, loading: voting } = useVote();
+  const { getVoteCount, castVote, hasVoted, loading: voting } = useVote();
   const [solutions, setSolutions] = useState<SolutionItem[]>([]);
   const [solutionsLoading, setSolutionsLoading] = useState(false);
   const [solutionsError, setSolutionsError] = useState<string | null>(null);
@@ -96,7 +97,7 @@ export default function ProblemDetailsPage() {
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{problem.title}</h1>
           <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
             {problem.difficulty && <Badge variant="secondary" className="capitalize">{problem.difficulty}</Badge>}
-            <span>Votes: {voteCounts[id] ?? 0}</span>
+            <span>Votes: {problem.voteCount ?? 0}</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -272,16 +273,31 @@ export default function ProblemDetailsPage() {
                       : s.submittedBy?.name || s.submittedBy?._id;
                   return (
                     <div key={s._id} className="border rounded-md p-3 text-sm space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium">Team: {teamName}</div>
-                        <div className="text-xs capitalize text-muted-foreground">Status: {s.status}</div>
-                      </div>
-                      {members && (
-                        <div className="text-xs text-muted-foreground">Members: {members}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Submitted by: {submittedBy}
-                        {s.createdAt && ` • ${new Date(s.createdAt).toLocaleString()}`}
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="font-medium">Team: {teamName}</div>
+                          {members && (
+                            <div className="text-xs text-muted-foreground">Members: {members}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            Submitted by: {submittedBy}
+                            {s.createdAt && ` • ${new Date(s.createdAt).toLocaleString()}`}
+                          </div>
+                          <div className="text-xs capitalize text-muted-foreground">Status: {s.status}</div>
+                        </div>
+                        {typeof team !== "string" && (
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              asChild
+                            >
+                              <Link href={`/editor/${problem._id}/${team._id}`}>
+                                Open Editor
+                              </Link>
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

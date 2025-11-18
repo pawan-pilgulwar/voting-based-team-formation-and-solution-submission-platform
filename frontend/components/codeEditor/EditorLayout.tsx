@@ -11,6 +11,7 @@ import axios from "axios";
 interface EditorLayoutProps {
   teamId: string;
   problemId: string;
+  readOnly?: boolean;
 }
 
 const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions";
@@ -36,7 +37,7 @@ interface RunResult {
   };
 }
 
-export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
+export const EditorLayout = ({ teamId, problemId, readOnly = false }: EditorLayoutProps) => {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [output, setOutput] = useState("");
   const [executionTime, setExecutionTime] = useState("");
@@ -47,8 +48,8 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
   const handleFileSelect = (file: any) => {
     setSelectedFile({
       ...file,
-      content: "",
-      language: getLanguageFromExtension(file.name),
+      content: file.content ?? "",
+      language: file.language || getLanguageFromExtension(file.name),
     });
   };
 
@@ -125,6 +126,7 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
           problemId={problemId}
           onFileSelect={handleFileSelect}
           selectedFile={selectedFile}
+          readOnly={readOnly}
         />
       </ResizablePanel>
       
@@ -136,6 +138,7 @@ export const EditorLayout = ({ teamId, problemId }: EditorLayoutProps) => {
           problemId={problemId}
           onRun={handleRunCode}
           activeFile={selectedFile}
+          readOnly={readOnly}
         />
       </ResizablePanel>
       

@@ -6,9 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchTeamById } from "@/lib/api";
+import { fetchTeamById, getSolutionsByTeam } from "@/lib/api";
 import type { Team } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
+
+interface SolutionItem {
+  _id: string;
+  team: any;
+  problem: any;
+  status: "draft" | "submitted" | "under-review" | "approved" | "rejected";
+  submittedBy?: { _id: string; name?: string } | string;
+  createdAt?: string;
+}
 
 export default function TeamDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +26,9 @@ export default function TeamDetailPage() {
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [solutions, setSolutions] = useState<SolutionItem[]>([]);
+  const [solutionsLoading, setSolutionsLoading] = useState(false);
+  const [solutionsError, setSolutionsError] = useState<string | null>(null);
 
   const isLeader = useMemo(() => {
     if (!team || !user) return false;
@@ -41,6 +53,25 @@ export default function TeamDetailPage() {
     };
     load();
   }, [id]);
+
+  useEffect(() => {
+    const loadSolutions = async () => {
+      if (!id) return;
+      if (!user) return;
+      if (user.role !== "mentor" && user.role !== "organization" && user.role !== "admin") return;
+      try {
+        setSolutionsLoading(true);
+        setSolutionsError(null);
+        const data = await getSolutionsByTeam(id);
+        setSolutions(Array.isArray(data) ? data : []);
+      } catch (e: any) {
+        setSolutionsError(e?.message || "Failed to load solutions");
+      } finally {
+        setSolutionsLoading(false);
+      }
+    };
+    loadSolutions();
+  }, [id, user?.role]);
 
   if (loading) {
     return (
@@ -88,6 +119,35 @@ export default function TeamDetailPage() {
         </div>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Problem &amp; Mentor</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {team.problem && (
+            <div className="space-y-1">
+              <div className="font-medium">
+                Problem: {(team.problem as any).title || (team.problem as any)._id}
+              </div>
+              {(team.problem as any).description && (
+                <p className="text-muted-foreground">
+                  {(team.problem as any).description}
+                </p>
+              )}
+            </div>
+          )}
+          <div>
+            <span className="font-medium">Mentor: </span>
+            {(() => {
+              const mentor: any = (team as any).mentor;
+              if (!mentor) return "Not assigned";
+              if (typeof mentor === "string") return "Assigned";
+              return mentor.name || mentor.username || "Assigned";
+            })()}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex gap-4">
         <Card className="flex-1">
           <CardHeader className="flex justify-between">
@@ -121,6 +181,57 @@ export default function TeamDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {user && (user.role === "mentor" || user.role === "organization" || user.role === "admin") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Solutions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {solutionsLoading && (
+              <p className="text-muted-foreground">Loading solutions...</p>
+            )}
+            {solutionsError && !solutionsLoading && (
+              <p className="text-red-500">{solutionsError}</p>
+            )}
+            {!solutionsLoading && !solutionsError && solutions.length === 0 && (
+              <p className="text-muted-foreground">No solutions have been submitted yet.</p>
+            )}
+            {!solutionsLoading && !solutionsError && solutions.length > 0 && (
+              <div className="space-y-2">
+                {solutions.map((s) => {
+                  const submittedBy =
+                    typeof s.submittedBy === "string"
+                      ? s.submittedBy
+                      : s.submittedBy?.name || s.submittedBy?._id;
+                  return (
+                    <div key={s._id} className="border rounded-md p-2 flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Solution: {s._id}</div>
+                        <div className="text-xs">
+                          Status: <span className="capitalize">{s.status}</span>
+                          {s.createdAt && ` • ${new Date(s.createdAt).toLocaleString()}`}
+                        </div>
+                        {submittedBy && (
+                          <div className="text-xs text-muted-foreground">
+                            Submitted by: {submittedBy}
+                          </div>
+                        )}
+                      </div>
+                      {team.problem && (
+                        <Link href={`/editor/${typeof team.problem === "string" ? team.problem : (team.problem as any)._id}/${team._id}`}>
+                          <Button size="sm" variant="outline">View Code</Button>
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex gap-3">
         <Link href="/teams">
           <Button variant="ghost">Back to Teams</Button>

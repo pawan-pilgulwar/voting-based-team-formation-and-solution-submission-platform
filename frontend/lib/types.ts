@@ -46,7 +46,10 @@ export interface Team {
     title: string;
     postedBy: string;
   };
+  mentor?: User | null;
+  status?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface User {

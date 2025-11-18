@@ -12,16 +12,19 @@ import { api, chatList as getChatList } from "@/lib/api";
 import { Team } from "@/lib/types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { io, Socket } from "socket.io-client";
+import { useRouter } from "next/navigation";
 
 export default function FloatingChat() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [attachment, setAttachment] = useState("");
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
-  const { user } = useAuth();
-  const { chats, fetchTeamMessages, postTeamMessage, deleteOwnMessage, loading, setChats } = useChat();
+  const { user, loading: authLoading } = useAuth();
+  const { chats, fetchTeamMessages, postTeamMessage, deleteOwnMessage, loading: chatLoading, setChats } = useChat();
   const [chatList, setChatList] = useState<Team[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const listView = activeTeamId === null;
+  const router = useRouter();
 
   useEffect(() => {
     const fetchChatList = async () => {
@@ -48,47 +51,62 @@ export default function FloatingChat() {
     };
   }, [open, activeTeamId, fetchTeamMessages, setChats]);
 
-  const canChat = Boolean(user);
+  const isStudentOrMentor = user?.role === "student" || user?.role === "mentor";
 
-  if (!canChat) return null;
+  if (user && !isStudentOrMentor) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="p-0 w-[380px] sm:w-[420px]">
-          <SheetHeader className="p-4 border-b">
-            <div className="flex items-center gap-2">
-              {!listView && (
-                <Button variant="ghost" size="icon" onClick={() => setActiveTeamId(null)}>
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              )}
-              <SheetTitle>{listView ? "Your Teams" : "Team Chat"}</SheetTitle>
-            </div>
-          </SheetHeader>
-
-          {listView ? (
-            <div className="p-4">
-              <div className="h-[calc(100vh-200px)] overflow-y-auto pr-2 space-y-2">
-                {loading && <div className="text-sm text-muted-foreground">Loading...</div>}
-                {!loading && chatList.length === 0 && (
-                  <div className="text-sm text-muted-foreground">No teams found</div>
+      {user && isStudentOrMentor && (
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="right" className="p-0 w-[380px] sm:w-[420px]">
+            <SheetHeader className="p-4 border-b">
+              <div className="flex items-center gap-2">
+                {!listView && (
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTeamId(null)}>
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
                 )}
-                {chatList.map((team) => (
-                  <Card key={team._id} className="shadow-sm hover:bg-accent cursor-pointer" onClick={() => setActiveTeamId(team._id)}>
-                    <CardHeader className="py-3">
-                      <CardTitle className="text-base">{team.name}</CardTitle>
-                    </CardHeader>
-                  </Card>
-                ))}
+                <SheetTitle>{listView ? "Your Teams" : "Team Chat"}</SheetTitle>
               </div>
-            </div>
-          ) : (
+            </SheetHeader>
+
+            {listView ? (
+              <div className="p-4">
+                <div className="h-[calc(100vh-200px)] overflow-y-auto pr-2 space-y-2">
+                  {chatLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
+                  {!chatLoading && chatList.length === 0 && (
+                    <div className="text-sm text-muted-foreground">No teams found</div>
+                  )}
+                  {chatList.map((team) => (
+                    <Card key={team._id} className="shadow-sm hover:bg-accent cursor-pointer" onClick={() => setActiveTeamId(team._id)}>
+                      <CardHeader>
+                        <CardTitle className="text-base">{team.name}</CardTitle>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          <span>Members: {team.members?.length ?? 0}</span>
+                          {team.mentor && (
+                            <span>
+                              {" "}• Mentor: {typeof team.mentor === "string" ? "Assigned" : team.mentor.name}
+                            </span>
+                          )}
+                        </div>
+                        {team.updatedAt && (
+                          <div className="mt-1 text-[10px] text-muted-foreground">
+                            Last active: {new Date(team.updatedAt).toLocaleString()}
+                          </div>
+                        )}
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ) : (
             <div className="flex flex-col h-full">
               <div className="flex-1 p-4">
                 <div className="h-[calc(100vh-260px)] overflow-y-auto space-y-3 pr-1">
                   {chats.map((c) =>{
                     const isOwnMessage = c.sender === user?._id;
+                    const roleLabel = c.role ? c.role.charAt(0).toUpperCase() + c.role.slice(1) : "";
                     return (
                       <div
                         key={c._id}
@@ -104,6 +122,9 @@ export default function FloatingChat() {
                               : "bg-secondary/20 text-right rounded-tl-none"
                         }`}
                       >
+                        <div className="text-[10px] font-semibold mb-0.5">
+                          {roleLabel}
+                        </div>
                         <div className="text-[10px] text-muted-foreground mb-1">
                           {new Date(c.createdAt || "").toLocaleTimeString([], {
                             hour: "2-digit",
@@ -111,6 +132,21 @@ export default function FloatingChat() {
                           })}
                         </div>
                         <div className="text-sm whitespace-pre-wrap">{c.text}</div>
+                        {c.attachments && c.attachments.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            {c.attachments.map((url: string, idx: number) => (
+                              <a
+                                key={idx}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[11px] text-primary underline break-all"
+                              >
+                                Attachment {idx + 1}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Show delete button for user's own messages */}
@@ -129,24 +165,33 @@ export default function FloatingChat() {
                 })}
                 </div>
               </div>
-              <div className="p-4 border-t">
+              <div className="p-4 border-t space-y-2">
+                <Input
+                  placeholder="Type a message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && activeTeamId && message.trim()) {
+                      const attachments = attachment.trim() ? [attachment.trim()] : [];
+                      postTeamMessage(activeTeamId, message.trim(), attachments);
+                      setMessage("");
+                      setAttachment("");
+                    }
+                  }}
+                />
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Type a message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && activeTeamId && message.trim()) {
-                        postTeamMessage(activeTeamId, message.trim());
-                        setMessage("");
-                      }
-                    }}
+                    placeholder="Attachment URL (optional)"
+                    value={attachment}
+                    onChange={(e) => setAttachment(e.target.value)}
                   />
                   <Button
                     onClick={() => {
                       if (activeTeamId && message.trim()) {
-                        postTeamMessage(activeTeamId, message.trim());
+                        const attachments = attachment.trim() ? [attachment.trim()] : [];
+                        postTeamMessage(activeTeamId, message.trim(), attachments);
                         setMessage("");
+                        setAttachment("");
                       }
                     }}
                   >
@@ -155,11 +200,24 @@ export default function FloatingChat() {
                 </div>
               </div>
             </div>
-          )}
-        </SheetContent>
-      </Sheet>
+            )}
+          </SheetContent>
+        </Sheet>
+      )}
 
-      <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={() => setOpen((v) => !v)}>
+      <Button
+        size="icon"
+        className="rounded-full h-12 w-12 shadow-lg"
+        onClick={() => {
+          if (!user && !authLoading) {
+            router.push("/auth/login");
+            return;
+          }
+          if (user && isStudentOrMentor) {
+            setOpen((v) => !v);
+          }
+        }}
+      >
         <MessageCircle className="h-6 w-6" />
       </Button>
     </div>

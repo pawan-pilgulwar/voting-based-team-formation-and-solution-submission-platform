@@ -27,8 +27,8 @@ export const getVoteCount = async (problemId: string): Promise<VoteCount> => {
 };
 
 // Teams
-export const fetchTeams = async (): Promise<Team[]> => {
-  const res = await api.get(`/api/v1/teams/all-teams`);
+export const fetchTeams = async (params?: { problemId?: string; mentorId?: string; studentId?: string }): Promise<Team[]> => {
+  const res = await api.get(`/api/v1/teams/all-teams`, { params });
   return res.data?.data || res.data || [];
 };
 
@@ -41,6 +41,12 @@ export const fetchTeamById = async (teamId: string): Promise<Team> => {
 export const chatList = async (userId: string): Promise<Team[]> => {
   const res = await api.get(`/api/v1/chat/chatlist/${userId}`);
   return res.data?.data || res.data || [];
+};
+
+// Mentor actions
+export const joinTeamAsMentor = async (teamId: string) => {
+  const res = await api.post(`/api/v1/mentors/join-team/${teamId}`);
+  return res.data?.data || res.data;
 };
 
 // Organization
@@ -62,7 +68,7 @@ export const getTeamCodeFiles = async (teamId: string) => {
   return res.data?.data || res.data;
 };
 
-export const saveCode = async (payload: { teamId: string; filename: string; language: string; path: string; content: string; type?: "file" | "folder" }) => {
+export const saveCode = async (payload: { teamId: string, filename: string, language: string, content: string, path: string, type?: "file" | "folder" }) => {
   const res = await api.post(`/api/v1/code/save`, payload, {
     headers: { "Content-Type": "application/json" },
   });

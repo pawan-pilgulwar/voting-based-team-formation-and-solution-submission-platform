@@ -9,6 +9,7 @@ import {
   FileText,
   BarChart3,
   LucideIcon,
+  Upload,
 } from "lucide-react";
 
 export type UserRole = "student" | "mentor" | "organization" | "admin";
@@ -34,16 +35,14 @@ export const roleMenus: RoleMenuConfig = {
   ],
   mentor: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Assigned Teams", url: "/mentor/teams", icon: Users },
     { title: "Problems", url: "/problems", icon: Swords },
-    { title: "Submissions", url: "/mentor/submissions", icon: FileText },
+    { title: "Teams", url: "/teams", icon: Users },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Setting", url: `/setting`, icon: Settings2},
-    { title: "Teams", url: "/teams", icon: Users },
   ],
   organization: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Hosted Problems", url: "/problems/hostproblem", icon: Swords },
+    { title: "Hosted Problems", url: "/problems/hostproblem", icon: Upload },
     { title: "Your Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
     { title: "Profile", url: "/profile", icon: UserCircle },

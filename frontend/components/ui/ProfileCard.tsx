@@ -15,28 +15,31 @@ export type ProfileCardProps = {
   avatarUrl?: string;
   coverUrl?: string;
   onAvatarUpload?: (file: File) => void;
-  gender?: "male" | "female";
+  gender?: "male" | "female" | "other";
+  username?: string;
 };
 
-export function ProfileCard({ name, email, role, avatarUrl, coverUrl, onAvatarUpload, gender }: ProfileCardProps) {
+export function ProfileCard({ name, email, role, avatarUrl, coverUrl, onAvatarUpload, gender, username }: ProfileCardProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Build gender-based avatar fallback chain
-  const genderKey = gender && ["male","female"].includes(gender) ? gender : null;
-  let genderPng
-  if (!genderKey) {
-    genderPng = "/employee.png"
-  } else {
-    genderPng = genderKey == "male"? `/avatars/boy.png` : "/avatars/girl.png";
-  }
+  const getDefaultAvatar = () => {
+    if (role === "admin") return "/avatars/admin.png";
+    if (role === "organization") return "/avatars/organization.png";
+    if (gender === "female") return "/avatars/female.png";
+    if (gender === "male") return "/avatars/male.png";
+    return "/avatars/male.png";
+  };
+
+  const fallbackAvatar = getDefaultAvatar();
+
   const [avatarSrc, setAvatarSrc] = useState<string>(
-    avatarUrl && avatarUrl.trim() !== "" ? avatarUrl : genderPng
+    avatarUrl && avatarUrl.trim() !== "" ? avatarUrl : fallbackAvatar
   );
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader
-        className="relative flex flex-col sm:flex-row sm:items-center gap-4 h-60 justify-end text-white"
+        className="relative flex flex-col sm:flex-row sm:items-center gap-4 h-30 justify-end text-white"
         style={{
           backgroundImage: coverUrl
             ? `url(${coverUrl})`
@@ -52,6 +55,7 @@ export function ProfileCard({ name, email, role, avatarUrl, coverUrl, onAvatarUp
             <AvatarImage
               src={avatarSrc}
               alt={name}
+              onError={() => setAvatarSrc(fallbackAvatar)}
             />
             <AvatarFallback className="text-lg">
               {name
@@ -75,7 +79,7 @@ export function ProfileCard({ name, email, role, avatarUrl, coverUrl, onAvatarUp
         </div>
         <div className="flex-1">
           <CardTitle className="text-2xl font-semibold flex items-center gap-2">
-            {name}
+            {username}
             <Badge variant="secondary" className="capitalize">{role}</Badge>
           </CardTitle>
           <CardDescription>{email}</CardDescription>
