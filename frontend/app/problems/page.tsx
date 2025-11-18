@@ -97,9 +97,10 @@ export default function ProblemsListPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Problems</h1>
           <p className="text-muted-foreground">Explore community and organization posted problems.</p>
         </div>
-        {user && (user.role === "organization" || user.role === "admin") && (
+        {user && (user.role === "organization" || user.role === "admin" || user.role === "student") && (
           <Button
             variant={showMine ? "default" : "outline"}
+            style={{position: "relative"}}
             size="sm"
             onClick={() => setShowMine((v) => !v)}
           >
@@ -109,7 +110,13 @@ export default function ProblemsListPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProblems.map((p) => (
+        {filteredProblems.length === 0 ? (
+          <div className="col-span-full flex justify-center items-center py-20">
+            <p className="text-center text-muted-foreground text-lg">
+              No problems found
+            </p>
+          </div>
+        ) : filteredProblems.map((p) => (
           <Card key={p._id}>
             <CardHeader>
               <div className="flex items-start justify-between gap-2">

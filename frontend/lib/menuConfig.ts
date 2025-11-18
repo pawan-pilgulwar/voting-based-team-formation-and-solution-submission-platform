@@ -27,9 +27,10 @@ export type RoleMenuConfig = Record<UserRole, MenuItem[]>;
 export const roleMenus: RoleMenuConfig = {
   student: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Hosted Problems", url: "/problems/hostproblem", icon: Upload },
     { title: "Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
-    { title: "Projects", url: "/projects", icon: Folder },
+    // { title: "Projects", url: "/projects", icon: Folder },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Setting", url: `/setting`, icon: Settings2}
   ],
@@ -43,7 +44,7 @@ export const roleMenus: RoleMenuConfig = {
   organization: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Hosted Problems", url: "/problems/hostproblem", icon: Upload },
-    { title: "Your Problems", url: "/problems", icon: Swords },
+    { title: "Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Setting", url: `/setting`, icon: Settings2}
