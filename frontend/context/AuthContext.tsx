@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { User } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 // Context type
 interface AuthContextType {
@@ -62,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }
   };
+  const router = useRouter()
 
   const handleLogout = async () => {
     setLoading(true)
@@ -75,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       await fetchUser()
       toast?.({ title: "Logged Out", description: "You have been logged out successfully." });
+      router.push("/auth/login");
 
     } catch (error: any) {
       console.log(error)
