@@ -8,7 +8,7 @@ interface EditorHeaderProps {
   teamName?: string;
 }
 
-export const EditorHeader = ({ teamId, problemId, teamName = "Team Alpha" }: EditorHeaderProps) => {
+export const EditorHeader = ({ teamName = "Team Alpha" }: EditorHeaderProps) => {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4">
       <div className="flex items-center gap-3">

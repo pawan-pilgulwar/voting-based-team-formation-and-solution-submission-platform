@@ -27,7 +27,7 @@ export default function CreateProblemPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { difficulty: "medium" },
   });

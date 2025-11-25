@@ -80,11 +80,14 @@ export const getTeamCodeTree = async (teamId: string) => {
   return res.data?.data || res.data;
 };
 
-export const runCode = async (payload: { code: string; language: string; input?: string }) => {
-  const res = await api.post(`/api/v1/code/run`, payload, {
-    headers: { "Content-Type": "application/json" },
+export const runCode = async (languageId: number, sourceCode: string, stdin: string = "") => {
+  const res = await api.post("/api/v1/code/run", {
+    languageId,
+    sourceCode,
+    stdin,
   });
-  return res.data?.data || res.data;
+
+  return res.data?.data;
 };
 
 export const deleteCodeFileApi = async (fileId: string) => {

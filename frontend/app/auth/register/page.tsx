@@ -25,7 +25,7 @@ import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { schema, FormValues } from "@/lib/formValidation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
 
@@ -37,53 +37,12 @@ const Page = () => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
   // Zod schema
-  const schema = z
-    .object({
-      name: z.string().min(2, { message: "Name is too short" }),
-      email: z.string().email({ message: "Enter a valid email" }),
-      username: z.string().min(3, { message: "Username is too short" }).toLowerCase(),
-      password: z.string().min(6, { message: "Min 6 characters" }),
-      confirmPassword: z.string().min(6, { message: "Min 6 characters" }),
-      role: z.enum(["student", "mentor", "organization", "admin"], {
-        errorMap: () => ({ message: "Select your role" }),
-      }),
-      gender: z.string().optional(),
-      year: z.coerce.number().int().min(1).max(8).optional(),
-      branch: z.string().optional(),
-      skills: z.string().optional(),
-      expertise: z.string().optional(),
-      preferredTeamRoles: z.string().optional(),
-      availability: z.string().optional(),
-      organizationName: z.string().optional(),
-      designation: z.string().optional(),
-      bio: z.string().max(1000).optional(),
-      institution: z.string().optional(),
-      social_linkedin: z.string().url().optional().or(z.literal("")),
-      social_github: z.string().url().optional().or(z.literal("")),
-      social_website: z.string().url().optional().or(z.literal("")),
-      terms: z.boolean(),
-    })
-    .refine((d: any) => d.password === d.confirmPassword, {
-      message: "Passwords do not match",
-      path: ["confirmPassword"],
-    })
-    .refine((d: any) => (d.role === "student" || d.role === "mentor" ? !!d.gender : true), {
-      message: "Gender is required",
-      path: ["gender"],
-    })
-    .refine((d: any) => d.terms === true, {
-      message: "You must accept terms",
-      path: ["terms"],
-    });
-
-  type FormValues = z.infer<typeof schema>;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -95,10 +54,8 @@ const Page = () => {
       role: undefined as any,
       terms: false,
     },
-    mode: "onBlur",
+    mode: "onSubmit",
   });
-
-  const currentRole = watch("role");
 
   // If already authenticated, redirect away
   useEffect(() => {
@@ -174,29 +131,59 @@ const Page = () => {
         </CardHeader>
 
         <CardContent>
+          {/* TOP MESSAGE */}
+          <h2 className="text-sm text-red-500 mb-4">
+            <span className="font-medium">Fields with *</span> are mandatory
+          </h2>
+
+          {/* FORM */}
           <form className="flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* Basic Info */}
+            {/* Name */}
             <div className="grid gap-2">
-              <Label htmlFor="name">Full name</Label>
+              <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
               <Input id="name" type="text" placeholder="Jane Doe" {...register("name")} />
-              {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
+            {/* Email */}
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
               <Input id="email" type="email" placeholder="m@example.com" {...register("email")} />
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email.message}</p>
+              {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+            </div>
+
+            {/* Username */}
+            <div className="grid gap-2">
+              <Label htmlFor="username">Username <span className="text-red-500">*</span></Label>
+              <Input id="username" type="text" placeholder="jane_doe" {...register("username")} />
+              {errors.username && <p className="text-xs text-red-500">{errors.username.message}</p>}
+            </div>
+
+            {/* Password */}
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
+              <Input id="password" type="password" {...register("password")} />
+
+              {/* Password Rules */}
+              <p className="text-xs text-gray-500 mt-1">
+                Password must contain:
+                <br />• Minimum 8 characters
+                <br />• At least one uppercase letter (A–Z)
+                <br />• At least one lowercase letter (a–z)
+                <br />• At least one number (0–9)
+              </p>
+
+              {errors.password && (
+                <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
               )}
             </div>
 
+            {/* Confirm Password */}
             <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" type="text" placeholder="jane_doe" {...register("username")} />
-              {errors.username && (
-                <p className="text-xs text-red-500">{errors.username.message}</p>
+              <Label htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
+              <Input id="confirmPassword" type="password" {...register("confirmPassword")} />
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
               )}
             </div>
 
@@ -208,6 +195,8 @@ const Page = () => {
                 setAvatarFile(f || null);
               }} />
             </div>
+
+            {/* Cover Image */}
             <div className="grid gap-2">
               <Label htmlFor="coverImage">Cover image</Label>
               <Input id="coverImage" type="file" accept="image/*" onChange={(e) => {
@@ -216,10 +205,15 @@ const Page = () => {
               }} />
             </div>
 
-            {/* Role Selection */}
+            {/* Role */}
             <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <Select onValueChange={(value) => { setRole(value); setValue("role", value as any, { shouldValidate: true }); }}>
+              <Label htmlFor="role">Role <span className="text-red-500">*</span></Label>
+              <Select
+                onValueChange={(value) => {
+                  setRole(value);
+                  setValue("role", value as any, { shouldValidate: true });
+                }}
+              >
                 <SelectTrigger id="role" className="w-full">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
@@ -229,17 +223,17 @@ const Page = () => {
                   <SelectItem value="organization">Organization</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.role && (
-                <p className="text-xs text-red-500">{errors.role.message as any}</p>
-              )}
+              {errors.role && <p className="text-xs text-red-500">{errors.role.message as any}</p>}
             </div>
 
             {/* Role-specific fields */}
             {role === "student" && (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(val) => { setValue("gender", val as any, { shouldValidate: true }); }}>
+                  <Label htmlFor="gender">Gender <span className="text-red-500">*</span></Label>
+                  <Select
+                    onValueChange={(val) => setValue("gender", val as any, { shouldValidate: true })}
+                  >
                     <SelectTrigger id="gender" className="w-full">
                       <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
@@ -249,27 +243,27 @@ const Page = () => {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.gender && (
-                    <p className="text-xs text-red-500">{errors.gender.message as any}</p>
-                  )}
+                  {errors.gender && <p className="text-xs text-red-500">{errors.gender.message as any}</p>}
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="year">Year</Label>
-                  <Input id="year" type="number" min={1} max={8} placeholder="2" {...register("year")} />
+                  <Input id="year" type="number" min={1} max={8} {...register("year")} />
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="branch">Branch</Label>
-                  <Input id="branch" type="text" placeholder="CSE" {...register("branch")} />
+                  <Input id="branch" type="text" {...register("branch")} />
                 </div>
+
                 <div className="grid gap-2">
-                  <Label htmlFor="skills">Skills (comma separated)</Label>
-                  <Input id="skills" type="text" placeholder="react, ml, iot" {...register("skills")} />
+                  <Label htmlFor="skills">Skills</Label>
+                  <Input id="skills" type="text" {...register("skills")} />
                 </div>
+
                 <div className="grid gap-2">
-                  <Label htmlFor="preferredTeamRoles">
-                    Preferred Team Roles
-                  </Label>
-                  <Input id="preferredTeamRoles" type="text" placeholder="Leader, Developer, Designer" {...register("preferredTeamRoles")} />
+                  <Label htmlFor="preferredTeamRoles">Preferred Team Roles</Label>
+                  <Input id="preferredTeamRoles" type="text" {...register("preferredTeamRoles")} />
                 </div>
               </>
             )}
@@ -277,8 +271,10 @@ const Page = () => {
             {role === "mentor" && (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(val) => { setValue("gender", val as any, { shouldValidate: true }); }}>
+                  <Label htmlFor="gender">Gender <span className="text-red-500">*</span></Label>
+                  <Select
+                    onValueChange={(val) => setValue("gender", val as any, { shouldValidate: true })}
+                  >
                     <SelectTrigger id="gender" className="w-full">
                       <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
@@ -288,23 +284,21 @@ const Page = () => {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.gender && (
-                    <p className="text-xs text-red-500">{errors.gender.message as any}</p>
-                  )}
                 </div>
+
                 <div className="grid gap-2">
-                  <Label htmlFor="skills">
-                    Skills / Expertise (comma separated)
-                  </Label>
-                  <Input id="skills" type="text" placeholder="AI, Web Dev" {...register("skills")} />
+                  <Label htmlFor="skills">Skills</Label>
+                  <Input id="skills" type="text" {...register("skills")} />
                 </div>
+
                 <div className="grid gap-2">
-                  <Label htmlFor="expertise">Expertise (comma separated)</Label>
-                  <Input id="expertise" type="text" placeholder="AI, Web Dev" {...register("expertise")} />
+                  <Label htmlFor="expertise">Expertise</Label>
+                  <Input id="expertise" type="text" {...register("expertise")} />
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="availability">Availability</Label>
-                  <Input id="availability" type="text" placeholder="Weekends" {...register("availability")} />
+                  <Input id="availability" type="text" {...register("availability")} />
                 </div>
               </>
             )}
@@ -313,52 +307,43 @@ const Page = () => {
               <>
                 <div className="grid gap-2">
                   <Label htmlFor="organizationName">Organization Name</Label>
-                  <Input id="organizationName" type="text" placeholder="ABC Org" {...register("organizationName")} />
+                  <Input id="organizationName" type="text" {...register("organizationName")} />
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="designation">Designation</Label>
-                  <Input id="designation" type="text" placeholder="Coordinator" {...register("designation")} />
+                  <Input id="designation" type="text" {...register("designation")} />
                 </div>
               </>
             )}
 
             {/* Common fields */}
-            <div className="grid gap-2">
+           <div className="grid gap-2">
               <Label htmlFor="bio">Bio</Label>
-              <Input id="bio" type="text" placeholder="Tell us about yourself" {...register("bio")} />
+              <Input id="bio" type="text" {...register("bio")} />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="institution">Institution</Label>
-              <Input id="institution" type="text" placeholder="Your college/university" {...register("institution")} />
+              <Input id="institution" type="text" {...register("institution")} />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="social_linkedin">LinkedIn</Label>
-              <Input id="social_linkedin" type="url" placeholder="https://linkedin.com/in/..." {...register("social_linkedin")} />
+              <Input id="social_linkedin" type="url" {...register("social_linkedin")} />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="social_github">GitHub</Label>
-              <Input id="social_github" type="url" placeholder="https://github.com/username" {...register("social_github")} />
+              <Input id="social_github" type="url" {...register("social_github")} />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="social_website">Website</Label>
-              <Input id="social_website" type="url" placeholder="https://yourdomain.com" {...register("social_website")} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-xs text-red-500">{errors.password.message}</p>
-              )}
+              <Input id="social_website" type="url" {...register("social_website")} />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm password</Label>
-              <Input id="confirmPassword" type="password" {...register("confirmPassword")} />
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
+            {/* Terms */}
             <div className="flex items-center space-x-2">
               <Checkbox id="terms" onCheckedChange={(val: any) => setValue("terms", Boolean(val), { shouldValidate: true })} />
               <Label htmlFor="terms" className="text-sm text-muted-foreground">
@@ -369,6 +354,7 @@ const Page = () => {
               <p className="text-xs text-red-500">{errors.terms.message}</p>
             )}
 
+            {/* Submit button */}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating..." : "Create account"}
             </Button>

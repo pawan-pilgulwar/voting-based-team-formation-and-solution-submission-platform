@@ -16,7 +16,7 @@ export default function ProblemsListPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { voteCounts, getVoteCount, castVote, hasVoted, loading: voting } = useVote();
+  const { getVoteCount, castVote, loading: voting } = useVote();
   const [showMine, setShowMine] = useState(false);
 
   const updateVoteCount = (problemId: string) => {

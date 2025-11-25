@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Upload, Trash2, FileText } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus, Upload, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -68,6 +68,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
           ]},
           { id: "3", name: "README.md", type: "file", path: "README.md", lastModified: "just now" },
         ]);
+        console.log(e);
         toast.info("Loaded sample files. Connect code files API for full sync.");
       }
     };
@@ -88,7 +89,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
     const makeId = (fullPath: string) => fullPath.replace(/[\/\.]/g, "-");
 
     const root: Record<string, any> = {};
-    items.forEach((it, idx) => {
+    items.forEach((it) => {
       const segments = it.path.split("/").filter(Boolean);
       let cur = root;
       let curPath = "";

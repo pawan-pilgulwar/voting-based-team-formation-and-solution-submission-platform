@@ -8,7 +8,6 @@ import type { Team } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { relative } from "path";
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);

@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MessageCircle, ArrowLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { useChat } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
-import { api, chatList as getChatList } from "@/lib/api";
+import { chatList as getChatList } from "@/lib/api";
 import { Team } from "@/lib/types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { io, Socket } from "socket.io-client";

@@ -6,15 +6,13 @@ import { CodeEditor } from "@/components/codeEditor/CodeEditor";
 import { OutputConsole } from "@/components/codeEditor/OutputConsole";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
-import axios from "axios";
+import { runCode } from "@/lib/api";
 
 interface EditorLayoutProps {
   teamId: string;
   problemId: string;
   readOnly?: boolean;
 }
-
-const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions";
 
 const LANGUAGE_IDS: Record<string, number> = {
   javascript: 63,
@@ -80,22 +78,8 @@ export const EditorLayout = ({ teamId, problemId, readOnly = false }: EditorLayo
     toast.info("Executing code...");
 
     try {
-      const response = await axios.post<RunResult>(
-        `${JUDGE0_URL}?base64_encoded=false&wait=true`,
-        {
-          language_id: LANGUAGE_IDS[language],
-          source_code: code,
-          stdin,
-        },
-        {
-          headers: {
-            "content-type": "application/json",
-            "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY!,
-            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
-          },
-        }
-      );
-      const data = response.data;
+      const data = await runCode(LANGUAGE_IDS[language], code, stdin);
+      console.log(data);
       if (data.status && data.status.id >= 3) {
         setOutput(data.stdout || data.stderr || data.compile_output || "Program finished with no output.");
         if (data.time) {

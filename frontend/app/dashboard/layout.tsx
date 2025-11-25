@@ -1,8 +1,6 @@
 "use client";
 
 import Head from "next/head"
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
@@ -37,9 +35,6 @@ export default function DashboardLayout({
     organization: "Organization Admin Dashboard",
     admin: "Admin Dashboard",
   };
-
-  const homeHref =
-    role === "organization" || role === "admin" ? "/admin" : `/dashboard/${role}`;
 
   return (
     <>

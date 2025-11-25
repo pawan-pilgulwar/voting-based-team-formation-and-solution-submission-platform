@@ -3,8 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { CodeFile } from "../models/codefiles.model.js";
-import vm from "node:vm";
-import { spawn } from "node:child_process";
+import axios from "axios";
 
 // POST /api/v1/code/save
 export const saveCode = asyncHandler(async (req, res) => {
@@ -133,28 +132,37 @@ export const getTeamCodeTree = asyncHandler(async (req, res) => {
 });
 
 // POST /api/v1/code/run
-export const runCode = asyncHandler(async (req, res) => {
-  const { code, language, input = "" } = req.body || {};
-  if (!code || !language) throw new ApiError(400, "code and language are required");
+export const runCodeJudge0 = asyncHandler(async (req, res) => {
+  const { languageId, sourceCode, stdin } = req.body;
+
+  if (!languageId || !sourceCode) {
+    throw new ApiError(400, "languageId and sourceCode are required");
+  }
 
   try {
-    if (language === "javascript") {
-      const sandbox = { consoleOutput: "" };
-      const context = vm.createContext({
-        console: {
-          log: (...args) => {
-            sandbox.consoleOutput += args.join(" ") + "\n";
-          },
-        },
-      });
-      const script = new vm.Script(code, { timeout: 1000 });
-      script.runInContext(context, { timeout: 1000 });
-      return res.json(new ApiResponse(200, { output: sandbox.consoleOutput.trim() }));
-    }
+    const options = {
+      method: "POST",
+      url: `${process.env.JUDGE0_URL}/submissions?base64_encoded=false&wait=true`,
+      headers: {
+        "X-RapidAPI-Key": process.env.JUDGE0_API_KEY,
+        "X-RapidAPI-Host": process.env.JUDGE0_HOST,
+        "Content-Type": "application/json",
+      },
+      data: {
+        language_id: languageId,
+        source_code: sourceCode,
+        stdin: stdin || "",
+      },
+    };
 
-    return res.json(new ApiResponse(200, { output: `Run for ${language} is not enabled in this environment.` }));
-  } catch (e) {
-    return res.status(200).json(new ApiResponse(200, { output: String(e?.message || e) }));
+    const response = await axios.request(options);
+
+    console.log(response.data)
+
+    return res.status(200).json(new ApiResponse(200, response.data, "Execution complete"));
+  } catch (error) {
+    console.error("Judge0 Error:", error.response?.data || error.message);
+    throw new ApiError(500, "Error running code with Judge0 API");
   }
 });
 
