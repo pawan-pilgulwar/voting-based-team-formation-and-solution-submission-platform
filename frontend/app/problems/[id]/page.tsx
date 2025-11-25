@@ -30,7 +30,7 @@ export default function ProblemDetailsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { voteCounts, getVoteCount, castVote, hasVoted, loading: voting } = useVote();
+  const { getVoteCount, castVote, hasVoted, loading: voting } = useVote();
   const [solutions, setSolutions] = useState<SolutionItem[]>([]);
   const [solutionsLoading, setSolutionsLoading] = useState(false);
   const [solutionsError, setSolutionsError] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export default function ProblemDetailsPage() {
       }
     };
     load();
-  }, [id,voteCounts]);
+  }, [id]);
 
   useEffect(() => {
     const loadSolutions = async () => {

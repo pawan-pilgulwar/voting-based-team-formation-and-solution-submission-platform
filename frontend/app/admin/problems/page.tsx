@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { adminListProblems } from "@/lib/api";
+import { adminListProblems, getVoteCount } from "@/lib/api";
 import Link from "next/link";
 
 export default function AdminProblemsPage() {
@@ -18,7 +18,23 @@ export default function AdminProblemsPage() {
       setLoading(true);
       try {
         const data = await adminListProblems();
-        setItems(Array.isArray(data) ? data : []);
+        
+        // Fetch vote counts for all problems and update items
+        const itemsWithVotes = await Promise.all(
+          data.map(async (p: any) => {
+            try {
+              const voteData = await getVoteCount(p._id);
+              return {
+                ...p,
+                voteCount: voteData?.count ?? p.voteCount ?? 0,
+              };
+            } catch (e) {
+              return p;
+            }
+          })
+        );
+        
+        setItems(Array.isArray(itemsWithVotes) ? itemsWithVotes : []);
       } finally {
         setLoading(false);
       }
@@ -68,7 +84,7 @@ export default function AdminProblemsPage() {
                   <TableRow key={p._id}>
                     <TableCell className="font-medium">{p.title}</TableCell>
                     <TableCell className="capitalize">{p.difficulty || "-"}</TableCell>
-                    <TableCell>{p.votes ?? 0}</TableCell>
+                    <TableCell>{p.voteCount ?? 0}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/problems/${p._id}`}>
