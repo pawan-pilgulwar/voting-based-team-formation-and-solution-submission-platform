@@ -15,8 +15,22 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 export function TopNav() {
+
+  const [search, setSearch] = useState<string>("");
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [results, setResults] = useState<any[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+  const handleClick = () => setShowResults(false);
+  window.addEventListener("click", handleClick);
+  return () => window.removeEventListener("click", handleClick);
+}, []);
   
   return (
     <div className="flex items-center justify-between w-full px-4 py-20">
@@ -33,15 +47,66 @@ export function TopNav() {
       </div>
 
       {/* Search Section */}
-      <div className="flex items-center gap-4 flex-1 max-w-md">
+      {user?.role != "admin" && <div className="flex items-center gap-4 flex-1 max-w-md">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search..."
+            placeholder="Search problems..."
             className="pl-10 bg-background/50 border-border/50 focus:bg-background"
+            value={search as string}
+            onChange={async (e) => {
+              e.stopPropagation();
+              const value = e.target.value;
+              setSearch(value);
+
+              if (!value.trim()) {
+                setResults([]);
+                setShowResults(false);
+                return;
+              }
+
+              setShowResults(true);
+
+              const res = await axios.get(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/problems/search`,
+                {
+                  params: { q: value },
+                  withCredentials: true, // optional but recommended since you use auth cookies
+                }
+              );
+
+              const data = res.data;
+              setResults(data.data);
+            }}
           />
+
+          {/* Search Results Dropdown */}
+          {showResults && results?.length > 0 && (
+            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-black border rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
+              {results.map((item : any) => (
+                <Link
+                  href={`/problems/${item._id}`}
+                  key={item._id}
+                  onClick={() => setShowResults(false)}
+                  className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <p className="font-medium">{item.title}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {item.description}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* No results */}
+          {showResults && results.length === 0 && search !== "" && (
+            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-black border rounded-lg shadow-lg p-4 text-sm text-muted-foreground">
+              No results found
+            </div>
+          )}
         </div>
-      </div>
+      </div>}
 
       {/* Right Section - Actions & Profile */}
       <div className="flex items-center gap-2">

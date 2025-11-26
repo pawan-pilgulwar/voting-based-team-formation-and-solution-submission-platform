@@ -49,7 +49,7 @@ export const createProblem = asyncHandler(async (req, res) => {
  * 📚 Get all problems (with filters)
  */
 export const getAllProblems = asyncHandler(async (req, res) => {
-  const { difficulty, status, tag, search } = req.query;
+  const { difficulty, status, tag } = req.query;
 
   try {
     const filter = {};
@@ -57,24 +57,20 @@ export const getAllProblems = asyncHandler(async (req, res) => {
     if (status) filter.status = status;
     if (tag) filter.tags = tag;
 
-    if (search) {
-      filter.$text = { $search: search };
-    }
-
     const problems = await Problem.find(filter)
     .populate("postedBy", "username email")
     .populate("votes")
     .sort({ createdAt: -1 });
     
-  const enrichedProblems = await Promise.all(
-    problems.map(async (p) => {
-      return {
-        ...p.toObject(),
-        hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
-        voteCount: p.getVoteCount(),
-      };
-    })
-  );
+    const enrichedProblems = await Promise.all(
+      problems.map(async (p) => {
+        return {
+          ...p.toObject(),
+          hasVoted: req.user ? await p.hasVoted(req.user._id) : false,
+          voteCount: p.getVoteCount(),
+        };
+      })
+    );
 
   return res
     .status(200)
@@ -84,6 +80,39 @@ export const getAllProblems = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to fetch problems");
   }
 });
+
+/**
+ * 📚 Search problems (with filters)
+ */
+export const searchProblems = asyncHandler(async (req, res) => {
+  const query = req.query.q || "";
+
+  try {
+    if (!query) {
+      return res.json(new ApiResponse(200, [], "No results"));
+    }
+  
+    const problems = await Problem.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+        { tags: { $regex: query, $options: "i" } },
+        { difficulty: { $regex: query, $options: "i" } },
+      ],
+    })
+      .limit(8) // like Amazon — only preview top results
+      .select("title description difficulty tags");
+      
+    return res
+      .status(200)
+      .json(new ApiResponse(200, problems, 
+      "Problems fetched successfully", ));
+  } catch (error) {
+    throw new ApiError(500, "Failed to fetch problems");
+  }
+
+});
+
 
 /**
  * 🔍 Get single problem by ID
