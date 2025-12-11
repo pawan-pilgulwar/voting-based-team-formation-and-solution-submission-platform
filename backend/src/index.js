@@ -23,16 +23,80 @@ connectDB()
     // Attach io to app for access in route handlers/controllers
     app.set("io", io);
 
+    // Helper to build a room name per team + file
+    const getFileRoom = (teamId, fileId) => `code:${teamId}:${fileId}`;
+
+
     io.of(/^\/team\/.+$/).on("connection", (socket) => {
         // Namespace pattern like /team/:id
         const namespace = socket.nsp;
         const teamId = namespace.name.split("/")[2];
-        socket.join(teamId);
 
+        
+        if (!teamId) {
+            console.warn("[socket] Connected to team namespace without teamId");
+            return;
+        }
+        
+        // Join general team room (used for chat etc.)
+        socket.join(teamId);
+        
+        // =================  CHAT EVENTS  =========================
         socket.on("message", (payload) => {
-            // Fan out to room; persistence will be handled via REST endpoints
+            // Broadcast to everyone in this team
             io.of(namespace.name).to(teamId).emit("message", payload);
         });
+        
+
+        // ========== CODE COLLABORATION EVENTS (NEW) ==========
+         // When user focuses/opens a file in editor
+        socket.on("code:joinFile", ({ fileId }) => {
+            if (!fileId) return;
+            const room = getFileRoom(teamId, fileId);
+            socket.join(room);
+            // (Optional) you can emit presence info here later
+        });
+
+        // When user closes/leaves a file
+        socket.on("code:leaveFile", ({ fileId }) => {
+            if (!fileId) return;
+            const room = getFileRoom(teamId, fileId);
+            socket.leave(room);
+        });
+
+        // When a student types in the editor
+        socket.on("code:change", ({ fileId, content, userId, username }) => {
+            if (!fileId) return;
+
+            const room = getFileRoom(teamId, fileId);
+
+            // Broadcast to everyone else viewing the same file
+            socket.to(room).emit("code:change", {
+            teamId,
+            fileId,
+            content,
+            userId,
+            username,
+            });
+        });
+
+        // When a user opens the directory view
+        socket.on("directory:join", () => {
+            const room = `dir:${teamId}`;
+            socket.join(room);
+        });
+
+        // When user closes directory panel or navigates away
+        socket.on("directory:leave", () => {
+            const room = `dir:${teamId}`;
+            socket.leave(room);
+        });
+
+        // // When a change is made to the directory (file/folder added, renamed, deleted)
+        // socket.on("directory:update", ({files, fileId}) => {
+        //     const room = `dir:${fileId}`;
+        //     socket.to(room).emit("directory:update", files);
+        // });
 
         socket.on("disconnect", () => {});
     });

@@ -22,8 +22,9 @@ const CodeFileSchema = new Schema(
       required: true,    // "App.js" or "src"
     },
     path: { 
-      type: String, 
-      required: true, // "/src/App.js"
+      type: String,
+      default: "",
+      trim: true,
     },
     type: { 
       type: String, 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus, Upload, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { getTeamCodeFiles } from "@/lib/api";
+import { getTeamCodeFiles, saveCode, deleteCodeFileApi, renameCodeFileApi } from "@/lib/api";
+import { io, Socket } from "socket.io-client";
+
 
 interface FileNode {
   id: string;
@@ -46,12 +48,134 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
   const [dialogOpen, setDialogOpen] = useState(false);
   const [targetPath, setTargetPath] = useState<string>("");
 
+  // ====== SOCKET.IO STATE (NEW) ======
+    const socketRef = useRef<Socket | null>(null);
+
+  // Normalize path returned from backend
+  const normalizePath = (path: string, filename: string) => {
+    if (!path || path === "." || path === "/") return filename;
+    if (path.endsWith(filename)) return path;
+    return `${path.replace(/\/+$/g, "")}/${filename}`;
+  };
+
+  // Build folder tree from flat paths
+  const buildTreeFromPaths = (
+    items: Array<{ path: string; lastModified?: string; content?: string; language?: string; _id: string }>
+  ): FileNode[] => {
+
+    const root: Record<string, any> = {};
+
+    items.forEach((it) => {
+      const segments = it.path.split("/").filter(Boolean);
+      let cur = root;
+      let curPath = "";
+      segments.forEach((seg, i) => {
+        curPath = curPath ? `${curPath}/${seg}` : seg;
+        const isLeaf = i === segments.length - 1;
+
+        if (!cur[seg]) {
+          cur[seg] = {
+            __node: {
+              id: it._id,
+              name: seg,
+              type: isLeaf ? "file" : "folder",
+              path: curPath,
+              lastModified: isLeaf ? it.lastModified : undefined,
+              content: isLeaf ? it.content : undefined,
+              language: isLeaf ? it.language : undefined,
+              children: isLeaf ? undefined : [],
+            },
+          };
+        }
+
+        cur = cur[seg];
+      });
+    });
+
+    const toArray = (obj: any): FileNode[] =>
+      Object.values(obj)
+        .filter((v: any) => v.__node)
+        .map((v: any) => {
+          const node: FileNode = v.__node;
+          if (node.type === "folder") {
+            node.children = toArray(v);
+          }
+          return node;
+        })
+        .sort((a, b) => {
+          if (a.type === "folder" && b.type === "file") return -1;
+          if (a.type === "file" && b.type === "folder") return 1;
+          return a.name.localeCompare(b.name);
+        });
+
+    return toArray(root);
+  };
+
+  // Function to refresh file tree from backend
+  const refreshFiles = async () => {
+    try {
+      const data = await getTeamCodeFiles(teamId);
+      const nodes = buildTreeFromPaths(
+        data.map((f: any) => ({
+          _id: f._id,
+          path: normalizePath(f.path, f.filename),
+          lastModified: f.updatedAt,
+          content: f.content,
+          language: f.language,
+        }))
+      );
+      setFiles(nodes);
+    } catch (err) {
+      console.error("Failed to refresh tree:", err);
+    }
+  };
+
+  // Initial file load
+  useEffect(() => {
+    refreshFiles();
+  }, [teamId]);
+
+  //-------------------------------
+  // SOCKET.IO SETUP
+  //-------------------------------
+
+  // Setup socket connection for real-time updates
+  useEffect(() => {
+    if (!teamId) return;
+
+    const namespace = `${process.env.NEXT_PUBLIC_BACKEND_URL}/team/${teamId}`;
+    const socket = io(namespace, {
+      withCredentials: true,
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Connected:", teamId);
+      socket.emit("directory:join"); // join team-level directory room
+    });
+
+    socket.on("directory:update", () => {
+      console.log("Directory received update");
+      refreshFiles(); // auto refresh UI
+    });
+
+     return () => {
+      socket.emit("directory:leave");
+      socket.disconnect();
+    };
+  }, [teamId]);
+
+  // ====== END SOCKET.IO STATE ======
+  
   useEffect(() => {
     const load = async () => {
       try {
         const data = await getTeamCodeFiles(teamId);
         const nodes = buildTreeFromPaths(
           (data || []).map((f: any) => ({
+            _id: f._id,
             path: normalizePath(f.path, f.filename),
             lastModified: f.updatedAt,
             content: f.content,
@@ -75,135 +199,79 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
     load();
   }, [teamId]);
 
-  const normalizePath = (path: string, filename: string) => {
-  if (!path || path === "." || path === "/") return filename;
-
-  // If backend mistakenly sent full path including filename
-  if (path.endsWith(filename)) return path;
-
-  return `${path.replace(/\/+$/g, "")}/${filename}`;
-};
-
-
-  const buildTreeFromPaths = (items: Array<{ path: string; lastModified?: string; content?: string; language?: string }>): FileNode[] => {
-    const makeId = (fullPath: string) => fullPath.replace(/[\/\.]/g, "-");
-
-    const root: Record<string, any> = {};
-    items.forEach((it) => {
-      const segments = it.path.split("/").filter(Boolean);
-      let cur = root;
-      let curPath = "";
-      segments.forEach((seg, i) => {
-        curPath = curPath ? `${curPath}/${seg}` : seg;
-        const isLeaf = i === segments.length - 1;
-        if (!cur[seg]) {
-          cur[seg] = {
-            __node: {
-              id: makeId(curPath),
-              name: seg,
-              type: isLeaf ? "file" : "folder",
-              path: curPath,
-              lastModified: isLeaf ? (it.lastModified || undefined) : undefined,
-              content: isLeaf ? (it as any).content : undefined,
-              language: isLeaf ? (it as any).language : undefined,
-              children: isLeaf ? undefined : [],
-            },
-          };
-        }
-        cur = cur[seg];
-      });
-    });
-    const toArray = (obj: any): FileNode[] => {
-      const data : FileNode[] = Object.values(obj)
-        .filter((v: any) => v && v.__node)
-        .map((v: any) => {
-          const node: FileNode = v.__node;
-          console.log(node);
-          if (node.type === "folder") {
-            node.children = toArray(v);
-          }
-          return node;
-        }); 
-      // SORT: folders first, files second (alphabetical inside each group)
-      data.sort((a, b) => {
-        if (a.type === "folder" && b.type === "file") return -1;
-        if (a.type === "file" && b.type === "folder") return 1;
-        return a.name.localeCompare(b.name);            // alphabetical sort
-      });
-      return data;
-    };
-    return toArray(root);
-  };
-
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expanded);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpanded(newExpanded);
-  };
-
-  const handleCreateItem = () => {
+  //-------------------------------
+  // CREATE FILE / FOLDER
+  //-------------------------------
+  const handleCreateItem = async () => {
     if (!newItemName.trim()) {
       toast.error("Please enter a name");
       return;
     }
 
-    const basePath = targetPath || "";
+    const isFile = newItemType === "file";
+  
+    // root folder fix
+    let basePath = targetPath || "";
+    if (basePath === "." || basePath === "/") {
+      basePath = "";
+    }
 
-    const newItem: FileNode = {
-      id: Date.now().toString(),
-      name: newItemName,
-      type: newItemType,
-      path: basePath ? `${basePath}/${newItemName}` : newItemName,
-      children: newItemType === "folder" ? [] : undefined,
-      lastModified: "just now",
-    };
-
-    const addItemToTree = (nodes: FileNode[]): FileNode[] => {
-      if (!basePath) {
-        return [...nodes, newItem];
-      }
-      return nodes.map((node) => {
-        if (node.type === "folder" && node.path === basePath) {
-          return {
-            ...node,
-            children: [...(node.children || []), newItem],
-          };
-        }
-        if (node.children) {
-          return {
-            ...node,
-            children: addItemToTree(node.children),
-          };
-        }
-        return node;
+    try {
+      await saveCode({
+        teamId,
+        filename: newItemName,
+        type: newItemType,
+        path: basePath,
+        language: isFile ? "plain" : undefined,
+        content: isFile ? "" : undefined,
       });
-    };
 
-    setFiles(addItemToTree(files));
-    setDialogOpen(false);
-    setNewItemName("");
-    toast.success(`${newItemType === "file" ? "File" : "Folder"} created successfully`);
+      toast.success(`${newItemType} created`);
+      refreshFiles();
+      setDialogOpen(false);
+      setNewItemName("");
+    } catch (err) {
+      console.log(err);
+      toast.error("Error creating item");
+      return;
+    }
   };
 
-  const handleDelete = (nodeToDelete: FileNode) => {
-    const deleteFromTree = (nodes: FileNode[]): FileNode[] => {
-      return nodes.filter((node) => {
-        if (node.id === nodeToDelete.id) {
-          return false;
-        }
-        if (node.children) {
-          node.children = deleteFromTree(node.children);
-        }
-        return true;
-      });
-    };
+  //-------------------------------
+  // DELETE FILE / FOLDER
+  //-------------------------------
+  const handleDelete = async (node: FileNode) => {
+    try {
+      await deleteCodeFileApi(node.id);
+      toast.success("Deleted");
+      refreshFiles();
+    } catch (err) {
+      console.log(err);
+      toast.error("Delete failed");
+    }
+  };
 
-    setFiles(deleteFromTree(files));
-    toast.success(`${nodeToDelete.type === "file" ? "File" : "Folder"} deleted successfully`);
+  //-------------------------------
+  // RENAME FILE
+  //-------------------------------
+  const handleRename = async (node: FileNode, newName: string) => {
+    try {
+      await renameCodeFileApi(node.id, { newFilename: newName });
+      toast.success("Renamed");
+      refreshFiles();
+    } catch (err) {
+      console.log(err);
+      toast.error("Rename failed");
+    }
+  };
+
+  //-------------------------------
+  // RENDER NODE
+  //-------------------------------
+  const toggleExpanded = (id: string) => {
+    const next = new Set(expanded);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setExpanded(next);
   };
 
   const handleUpload = (folder: FileNode | null) => {
@@ -226,9 +294,9 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
           {isFolder && (
             <button onClick={() => toggleExpanded(node.id)} className="p-0 hover:bg-transparent">
               {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown size={14} />
               ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight size={14} />
               )}
             </button>
           )}
@@ -247,12 +315,12 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
           >
             {isFolder ? (
               isExpanded ? (
-                <FolderOpen className="h-4 w-4 text-accent flex-shrink-0" />
+                <FolderOpen size={16} />
               ) : (
-                <Folder className="h-4 w-4 text-accent flex-shrink-0" />
+                <Folder size={16} />
               )
             ) : (
-              <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <FileText size={16} />
             )}
             <span className="text-sm truncate text-foreground">{node.name}</span>
           </div>
@@ -261,13 +329,13 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100"
+              // className="h-6 w-6 opacity-0 group-hover:opacity-100"
               onClick={(e) => {
                 e.stopPropagation();
                 handleDelete(node);
               }}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 size={14} />
             </Button>
           )}
         </div>
@@ -279,6 +347,9 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
     );
   };
 
+  //-------------------------------
+  // UI
+  //-------------------------------
   return (
     <div className="h-full flex flex-col bg-card border-r border-border">
       <div className="flex items-center justify-between p-3 border-b border-border">
@@ -362,7 +433,13 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleCreateItem}>Create</Button>
+                <Button 
+                onClick={() => {
+                  handleCreateItem();
+                }}
+                >
+                  Create
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

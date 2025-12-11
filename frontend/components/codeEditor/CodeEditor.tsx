@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Play, Clock, X, Send } from "lucide-react";
 import { toast } from "sonner";
 import { saveCode, submitSolution } from "@/lib/api";
 import Editor from "@monaco-editor/react";
+import { io, Socket } from "socket.io-client";
+import { useAuth } from "@/context/AuthContext";
 
 interface EditorFile {
   id: string;
@@ -29,6 +31,76 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile, readOnly = fa
   const [openFiles, setOpenFiles] = useState<EditorFile[]>([]);
   const [activeTab, setActiveTab] = useState<string>("");
   const [code, setCode] = useState("");
+  const { user } = useAuth();
+
+  // ====== SOCKET.IO STATE (NEW) ======
+  const socketRef = useRef<Socket | null>(null);
+  const activeTabRef = useRef<string>("");
+
+  // keep ref in sync with state for use inside socket handlers
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!teamId) return;
+
+    const namespace = `${process.env.NEXT_PUBLIC_BACKEND_URL}/team/${teamId}`;
+    const socket = io(namespace, {
+      withCredentials: true,
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+     socket.on("connect", () => {
+      // console.log("Code editor socket connected", socket.id);
+    });
+
+    
+    // Listen for remote code changes
+    socket.on("code:change", (payload: any) => {
+      const { fileId, content } = payload || {};
+      if (!fileId) return;
+
+      setOpenFiles((prev) => {
+        const updated = prev.map((f) =>
+          f.id === fileId ? { ...f, content: content ?? "" } : f
+        );
+
+        // If this is the currently active file, update editor content too
+        if (fileId === activeTabRef.current) {
+          setCode(content ?? "");
+        }
+
+        return updated;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+
+  }, [teamId]);
+
+  // Join / leave file rooms when active tab changes
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    if (!activeTab) return;
+
+    // Join this file room
+    socket.emit("code:joinFile", { fileId: activeTab });
+
+    // On change of activeTab or unmount, leave the previous file room
+    return () => {
+      socket.emit("code:leaveFile", { fileId: activeTab });
+    };
+  }, [activeTab]);
+
+
 
   useEffect(() => {
     if (activeFile && !openFiles.find((f) => f.id === activeFile.id)) {
@@ -71,7 +143,9 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile, readOnly = fa
     try {
       const fullPath = currentFile.path || currentFile.name;
       const lastSlashIndex = fullPath.lastIndexOf("/");
-      const parentPath = lastSlashIndex > -1 ? fullPath.slice(0, lastSlashIndex) : ".";
+      let parentPath = lastSlashIndex > -1 ? fullPath.slice(0, lastSlashIndex) : ".";
+
+      if (parentPath === "." || parentPath === "/") parentPath = "";
 
       await saveCode({
         teamId,
@@ -204,6 +278,13 @@ export const CodeEditor = ({ teamId, problemId, onRun, activeFile, readOnly = fa
                         f.id === activeTab ? { ...f, content: value || "" } : f
                       )
                     );
+                    socketRef.current?.emit("code:change", {
+                      fileId: activeTabRef.current,
+                      teamId: teamId,
+                      content: value,
+                      userId: user?._id,
+                      username: user?.name,
+                    });
                   }}
                   theme="vs-dark"
                   options={{ readOnly }}

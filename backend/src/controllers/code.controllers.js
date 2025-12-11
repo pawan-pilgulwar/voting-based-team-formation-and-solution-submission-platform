@@ -46,6 +46,25 @@ export const saveCode = asyncHandler(async (req, res) => {
     path,
     type,
   });
+
+  // Emit socket event to notify team members of file creation
+  try {
+    const io = req.app.get("io");
+    if (io) {
+      const namespace = `/team/${teamId}`;
+      // Get updated file tree
+      const updatedFiles = await CodeFile.find({ team: teamId }).sort({ path: 1, filename: 1 }).lean();
+      io.of(namespace).to(`dir:${teamId}`).emit("directory:update", { 
+        files: updatedFiles, 
+        fileId: created._id.toString(),
+        action: "created",
+        userId
+      });
+    }
+  } catch (err) {
+    console.error("Socket emission error:", err);
+  }
+
   return res.status(201).json(new ApiResponse(201, created, "File created"));
 });
 
@@ -66,7 +85,7 @@ export const renameCodeFile = asyncHandler(async (req, res) => {
     const oldFilename = file.filename;
     const oldPath = file.path || "";
     const oldFull = oldPath ? `${oldPath}/${oldFilename}` : oldFilename;
-
+    
     const updatedFilename = newFilename || oldFilename;
     const updatedPath = (newPath !== undefined) ? newPath : oldPath;
     const newFull = updatedPath ? `${updatedPath}/${updatedFilename}` : updatedFilename;
@@ -83,6 +102,26 @@ export const renameCodeFile = asyncHandler(async (req, res) => {
         child.path = `${newFull}${relative}`;
         await child.save();
       }
+    }
+
+    // Emit socket event to notify team members of rename
+    try {
+      const io = req.app.get("io");
+      const teamId = file.team;
+      if (io) {
+        const namespace = `/team/${teamId}`;
+        // Get updated file tree
+        const updatedFiles = await CodeFile.find({ team: file.team }).sort({ path: 1, filename: 1 }).lean();
+        io.of(namespace).to(`dir:${teamId}`).emit("directory:update", { 
+          files: updatedFiles, 
+          fileId: fileId,
+          action: "renamed",
+          oldName: oldFilename,
+          newName: updatedFilename
+        });
+      }
+    } catch (err) {
+      console.error("Socket emission error:", err);
     }
 
     return res.json(new ApiResponse(200, file, "Renamed successfully"));
@@ -169,7 +208,7 @@ export const runCodeJudge0 = asyncHandler(async (req, res) => {
 
 // DELETE /api/v1/code/:fileId  (Delete a file or folder)
 export const deleteCodeFile = asyncHandler(async (req, res) => {
-  const { fileId } = req.params;
+  const { fileId, teamId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(fileId)) {
     throw new ApiError(400, "Invalid file id");
@@ -178,7 +217,8 @@ export const deleteCodeFile = asyncHandler(async (req, res) => {
   try {
     const file = await CodeFile.findById(fileId);
     if (!file) throw new ApiError(404, "File or folder not found");
-  
+
+    const teamId = file.team;
     // If it's a folder, delete all nested files inside
     let deleteCodeFiles = [];
     if (file.type === "folder") {
@@ -190,6 +230,24 @@ export const deleteCodeFile = asyncHandler(async (req, res) => {
     } else {
       const deleted = await file.deleteOne();
       deleteCodeFiles = [...deleteCodeFiles, deleted];
+    }
+
+    // Emit socket event to notify team members of deletion
+    try {
+      const io = req.app.get("io");
+      if (io) {
+        const namespace = `/team/${teamId}`;
+        // Get updated file tree
+        const updatedFiles = await CodeFile.find({ team: teamId }).sort({ path: 1, filename: 1 }).lean();
+        io.of(namespace).to(`dir:${teamId}`).emit("directory:update", { 
+          files: updatedFiles, 
+          fileId: fileId,
+          action: "deleted",
+          deletedName: file.filename
+        });
+      }
+    } catch (err) {
+      console.error("Socket emission error:", err);
     }
 
     return res.json(new ApiResponse(200, deleteCodeFiles, "File or folder deleted successfully"));

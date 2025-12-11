@@ -29,7 +29,11 @@ export default function AdminProblemsPage() {
                 voteCount: voteData?.count ?? p.voteCount ?? 0,
               };
             } catch (e) {
-              return p;
+              console.log("Error: " + e);
+              return {
+                ...p,
+                voteCount: p.voteCount ?? 0,
+              };
             }
           })
         );

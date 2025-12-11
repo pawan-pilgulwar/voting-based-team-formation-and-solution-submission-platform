@@ -68,7 +68,7 @@ export const getTeamCodeFiles = async (teamId: string) => {
   return res.data?.data || res.data;
 };
 
-export const saveCode = async (payload: { teamId: string, filename: string, language: string, content: string, path: string, type?: "file" | "folder" }) => {
+export const saveCode = async (payload: { teamId: string, filename: string, language: string | undefined, content: string | undefined, path: string, type?: "file" | "folder" }) => {
   const res = await api.post(`/api/v1/code/save`, payload, {
     headers: { "Content-Type": "application/json" },
   });
