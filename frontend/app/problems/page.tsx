@@ -128,7 +128,7 @@ export default function ProblemsListPage() {
               <p className="text-sm text-muted-foreground line-clamp-3">{p.description}</p>
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm text-muted-foreground">Votes: {p.voteCount ?? 0}</div>
-                <div className="flex gap-2">
+                <div className="flex gap-4">
                   <Link href={`/problems/${p._id}`}>
                     <Button variant="secondary">Details</Button>
                   </Link>
@@ -142,7 +142,7 @@ export default function ProblemsListPage() {
                       onClick={() => updateVoteCount(p._id)}
                       disabled={!user || p.hasVoted || (p.voteCount ?? 0) >= 6 || voting}
                     >
-                      {p.hasVoted ? "Voted" : voting ? "Voting..." : "Vote"}
+                      {p.hasVoted ? "Interested" : voting ? "Submitting..." : "Show Interest"}
                     </Button>
                   )}
                 </div>
