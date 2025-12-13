@@ -60,7 +60,15 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
 
   // Build folder tree from flat paths
   const buildTreeFromPaths = (
-    items: Array<{ path: string; lastModified?: string; content?: string; language?: string; _id: string }>
+    items: Array<{
+      path: string;
+      lastModified?: string;
+      content?: string;
+      language?: string;
+      _id: string;
+      filename?: string;
+      type?: "file" | "folder";
+    }>
   ): FileNode[] => {
 
     const root: Record<string, any> = {};
@@ -74,16 +82,20 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
         const isLeaf = i === segments.length - 1;
 
         if (!cur[seg]) {
+          // For leaf nodes prefer the original item's type (file/folder) when available
+          const nodeType = isLeaf ? (it.type || "file") : "folder";
+          const nodeId = nodeType === "file" ? it._id : `folder:${curPath}`;
+
           cur[seg] = {
             __node: {
-              id: it._id,
+              id: nodeId,
               name: seg,
-              type: isLeaf ? "file" : "folder",
+              type: nodeType,
               path: curPath,
-              lastModified: isLeaf ? it.lastModified : undefined,
-              content: isLeaf ? it.content : undefined,
-              language: isLeaf ? it.language : undefined,
-              children: isLeaf ? undefined : [],
+              lastModified: nodeType === "file" ? it.lastModified : undefined,
+              content: nodeType === "file" ? it.content : undefined,
+              language: nodeType === "file" ? it.language : undefined,
+              children: nodeType === "folder" ? [] : undefined,
             },
           };
         }
@@ -118,6 +130,8 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
       const nodes = buildTreeFromPaths(
         data.map((f: any) => ({
           _id: f._id,
+          filename: f.filename,
+          type: f.type,
           path: normalizePath(f.path, f.filename),
           lastModified: f.updatedAt,
           content: f.content,
@@ -176,6 +190,8 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
         const nodes = buildTreeFromPaths(
           (data || []).map((f: any) => ({
             _id: f._id,
+            filename: f.filename,
+            type: f.type,
             path: normalizePath(f.path, f.filename),
             lastModified: f.updatedAt,
             content: f.content,
@@ -213,7 +229,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
     // root folder fix
     let basePath = targetPath || "";
     if (basePath === "." || basePath === "/") {
-      basePath = "";
+      basePath = ".";
     }
 
     try {
