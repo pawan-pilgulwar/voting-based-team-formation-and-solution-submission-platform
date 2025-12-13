@@ -4,9 +4,7 @@ import http from "http";
 import { Server } from "socket.io";
 import connectDB from "./db/index.js";
 
-dotenv.config({
-    path: './.env'
-});
+dotenv.config();
 
 const PORT = process.env.PORT || 7000;
 
