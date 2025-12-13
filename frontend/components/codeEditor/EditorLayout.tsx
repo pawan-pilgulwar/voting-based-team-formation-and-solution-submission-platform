@@ -22,19 +22,6 @@ const LANGUAGE_IDS: Record<string, number> = {
   c: 50,
 };
 
-interface RunResult {
-  stdout?: string | null;
-  stderr?: string | null;
-  compile_output?: string | null;
-  message?: string | null;
-  time?: string;
-  memory?: number;
-  status?: {
-    id: number;
-    name: string;
-  };
-}
-
 export const EditorLayout = ({ teamId, problemId, readOnly = false }: EditorLayoutProps) => {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [output, setOutput] = useState("");

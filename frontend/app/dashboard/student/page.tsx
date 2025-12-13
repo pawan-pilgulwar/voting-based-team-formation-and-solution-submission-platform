@@ -1,8 +1,34 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { fetchProblems, fetchTeams } from "@/lib/api";
 
 export default function StudentDashboardPage() {
+  const { user } = useAuth();
+  const [problems, setProblems] = useState<any[]>([]);
+  const [myTeams, setMyTeams] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [p, teams] = await Promise.all([
+          fetchProblems().catch(() => []),
+          user?._id ? fetchTeams({ studentId: user._id }).catch(() => []) : Promise.resolve([]),
+        ]);
+        setProblems(p || []);
+        setMyTeams(teams || []);
+      } catch (e) {
+        setProblems([]);
+        setMyTeams([]);
+      }
+    };
+    load();
+  }, [user?._id]);
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3">
@@ -30,13 +56,13 @@ export default function StudentDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Quick Stats</CardTitle>
-            <CardDescription>Mock overview</CardDescription>
+            <CardDescription>Overview</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="text-sm space-y-2">
-              <li>Active Challenges: 2</li>
-              <li>Team Invites: 1</li>
-              <li>Open Tasks: 5</li>
+              <li>Active Challenges: {problems.length}</li>
+              <li>My Teams: {myTeams.length}</li>
+              <li>Open Tasks: -</li>
             </ul>
           </CardContent>
         </Card>
@@ -49,12 +75,11 @@ export default function StudentDashboardPage() {
             <CardDescription>Jump back into your work</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="#">AI for Social Good</Link>
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="#">Green Energy Hack</Link>
-            </Button>
+            {problems.slice(0, 3).map((p: any) => (
+              <Button key={p._id || p.id} variant="outline" className="w-full" asChild>
+                <Link href={`/challenges/${p._id || p.id}`}>{p.title || p.name || "Challenge"}</Link>
+              </Button>
+            ))}
             <Button variant="ghost" className="w-full" asChild>
               <Link href="/dashboard/challenges">View all</Link>
             </Button>
@@ -67,12 +92,11 @@ export default function StudentDashboardPage() {
             <CardDescription>Collaborations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="#">Team Phoenix</Link>
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="#">Quantum Crew</Link>
-            </Button>
+            {myTeams.slice(0, 5).map((t: any) => (
+              <Button key={t._id} variant="outline" className="w-full" asChild>
+                <Link href={`/teams/${t._id}`}>{t.name}</Link>
+              </Button>
+            ))}
             <Button variant="ghost" className="w-full" asChild>
               <Link href="/dashboard/teams">Manage teams</Link>
             </Button>

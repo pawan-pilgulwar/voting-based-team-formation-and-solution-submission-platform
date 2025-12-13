@@ -1,8 +1,42 @@
+"use client";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { fetchProblems, fetchTeams, getSolutionsByTeam } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function OrganizationDashboardPage() {
+  const [problemsCount, setProblemsCount] = useState<number | null>(null);
+  const [participantsCount, setParticipantsCount] = useState<number | null>(null);
+  const [submissionsCount, setSubmissionsCount] = useState<number | null>(null);
+
+  const {user} = useAuth();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        let problems: any[] = await fetchProblems();
+        // problems = problems.filter((p: any) => p.postedBy === user?._id);
+        const teams = await fetchTeams();
+        const participants = teams.reduce((sum: number, t: any) => sum + (t.members?.length || 0), 0);
+
+        // Count submissions across teams (best-effort)
+        const solsLists = await Promise.all((teams || []).map((t: any) => getSolutionsByTeam(t._id).catch(() => [])));
+        const submissions = solsLists.reduce((sum: number, s: any[]) => sum + (s?.length || 0), 0);
+
+        setProblemsCount(problems?.length ?? 0);
+        setParticipantsCount(participants ?? 0);
+        setSubmissionsCount(submissions ?? 0);
+      } catch (e) {
+        setProblemsCount(0);
+        setParticipantsCount(0);
+        setSubmissionsCount(0);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-4">
@@ -12,7 +46,7 @@ export default function OrganizationDashboardPage() {
             <CardDescription>Hosted so far</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">12</div>
+            <div className="text-3xl font-bold">{problemsCount ?? "—"}</div>
           </CardContent>
         </Card>
         <Card>
@@ -21,7 +55,7 @@ export default function OrganizationDashboardPage() {
             <CardDescription>Across all challenges</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">842</div>
+            <div className="text-3xl font-bold">{participantsCount ?? "—"}</div>
           </CardContent>
         </Card>
         <Card>
@@ -30,7 +64,7 @@ export default function OrganizationDashboardPage() {
             <CardDescription>Awaiting review</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">37</div>
+            <div className="text-3xl font-bold">{submissionsCount ?? "—"}</div>
           </CardContent>
         </Card>
         <Card>
@@ -39,7 +73,7 @@ export default function OrganizationDashboardPage() {
             <CardDescription>Community feedback</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">4.6</div>
+            <div className="text-3xl font-bold">—</div>
           </CardContent>
         </Card>
       </section>
@@ -79,9 +113,7 @@ export default function OrganizationDashboardPage() {
             <CardDescription>Latest events across hosted challenges</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div>Team &quot;Innovators&quot; submitted to &quot;Smart Cities&quot;</div>
-            <div>New challenge draft created: &quot;Waste Management&quot;</div>
-            <div>Mentor &quot;Dr. Lee&quot; added to &quot;HealthTech 2025&quot;</div>
+            <div>Recent activity loaded from platform</div>
           </CardContent>
         </Card>
       </section>
