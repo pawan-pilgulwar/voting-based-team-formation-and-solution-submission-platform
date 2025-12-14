@@ -226,10 +226,33 @@ export const deleteCodeFile = asyncHandler(async (req, res) => {
       const deleted = await CodeFile.deleteMany({
         $or: [{ _id: fileId }, { path: { $regex: `^${prefix}` } }],
       });
-      deleteCodeFiles = [...deleted]
+      deleteCodeFiles = { deletedCount: deleted.deletedCount || 0 };
     } else {
-      const deleted = await file.deleteOne();
-      deleteCodeFiles = [...deleteCodeFiles, deleted];
+      // delete the file
+      await file.deleteOne();
+      deleteCodeFiles = { deletedCount: 1 };
+
+      // After deleting a file, check if its parent folder (if any) is now empty and remove it
+      const parentFull = file.path || "";
+      if (parentFull) {
+        const segments = parentFull.split("/");
+        const folderFilename = segments.pop();
+        const folderPath = segments.join("/");
+        const parentFolder = await CodeFile.findOne({ type: "folder", filename: folderFilename, path: folderPath });
+        if (parentFolder) {
+          // Count any remaining items whose path equals the folder full path or starts with folderFull/
+          const childCount = await CodeFile.countDocuments({ path: { $regex: `^${parentFull}(/|$)` } });
+          if (childCount === 0) {
+            try {
+              await parentFolder.deleteOne();
+              // reflect removal in response
+              deleteCodeFiles.parentFolderDeleted = true;
+            } catch (err) {
+              console.error("Failed to delete empty parent folder:", err);
+            }
+          }
+        }
+      }
     }
 
     // Emit socket event to notify team members of deletion

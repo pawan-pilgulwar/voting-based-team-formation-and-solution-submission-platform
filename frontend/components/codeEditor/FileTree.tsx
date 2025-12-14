@@ -84,7 +84,9 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
         if (!cur[seg]) {
           // For leaf nodes prefer the original item's type (file/folder) when available
           const nodeType = isLeaf ? (it.type || "file") : "folder";
-          const nodeId = nodeType === "file" ? it._id : `folder:${curPath}`;
+          // Use actual DB _id for files. For folders, if the item is an explicit folder record (leaf
+          // with an _id) use that _id so API calls (delete/rename) receive a valid ObjectId.
+          const nodeId = nodeType === "file" ? it._id : (isLeaf && it._id ? it._id : `folder:${curPath}`);
 
           cur[seg] = {
             __node: {
@@ -341,19 +343,23 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
             <span className="text-sm truncate text-foreground">{node.name}</span>
           </div>
 
-          {!readOnly && (
-            <Button
-              variant="ghost"
-              size="icon"
-              // className="h-6 w-6 opacity-0 group-hover:opacity-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(node);
-              }}
-            >
-              <Trash2 size={14} />
-            </Button>
-          )}
+          {!readOnly && (() => {
+            const isSyntheticFolder = node.type === "folder" && String(node.id).startsWith("folder:");
+            const canDelete = node.type === "file" || (node.type === "folder" && !isSyntheticFolder);
+            if (!canDelete) return null;
+            return (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(node);
+                }}
+              >
+                <Trash2 size={14} />
+              </Button>
+            );
+          })()}
         </div>
 
         {isFolder && isExpanded && node.children && (
