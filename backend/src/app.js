@@ -7,24 +7,15 @@ dotenv.config({
     path: './.env'
 });
 
-const allowedOrigins = process.env.CORS_ORIGINS
-  ?.split(",")
-  .map(origin => origin.trim()) || [];
+dotenv.config({
+    path: './.env'
+});
 
 const app = express();
-console.log(allowedOrigins)
+console.log(process.env.CORS_ORIGIN)
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // allow Postman / server-side requests
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    }, //process.env.CORS_ORIGIN
+    origin: process.env.CORS_ORIGIN, //process.env.CORS_ORIGIN
     credentials: true,
   })
 );
