@@ -7,10 +7,6 @@ dotenv.config({
     path: './.env'
 });
 
-dotenv.config({
-    path: './.env'
-});
-
 const app = express();
 console.log(process.env.CORS_ORIGIN)
 app.use(
