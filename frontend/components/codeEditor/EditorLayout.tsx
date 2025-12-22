@@ -7,6 +7,7 @@ import { OutputConsole } from "@/components/codeEditor/OutputConsole";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
 import { runCode } from "@/lib/api";
+import { getLanguageFromFilename } from "@/lib/CodingLanguageUtils";
 
 interface EditorLayoutProps {
   teamId: string;
@@ -34,29 +35,10 @@ export const EditorLayout = ({ teamId, problemId, readOnly = false }: EditorLayo
     setSelectedFile({
       ...file,
       content: file.content ?? "",
-      language: file.language || getLanguageFromExtension(file.name),
+      language: file.language || getLanguageFromFilename(file.name),
     });
   };
 
-  const getLanguageFromExtension = (filename: string): string => {
-    const ext = filename.split(".").pop()?.toLowerCase();
-    const languageMap: Record<string, string> = {
-      py: "python",
-      js: "javascript",
-      ts: "typescript",
-      java: "java",
-      cpp: "cpp",
-      c: "c",
-      cs: "csharp",
-      go: "go",
-      rs: "rust",
-      rb: "ruby",
-      php: "php",
-      swift: "swift",
-      kt: "kotlin",
-    };
-    return languageMap[ext || ""] || "text";
-  };
 
   const handleRunCode = async (code: string, language: string) => {
     setLoading(true);
@@ -64,8 +46,26 @@ export const EditorLayout = ({ teamId, problemId, readOnly = false }: EditorLayo
     setOutput("Running code...\n");
     toast.info("Executing code...");
 
+  // Validate language id and source code
+  const languageId = LANGUAGE_IDS[language];
+  if (!languageId) {
+    toast.error(`Unsupported language: ${language}`);
+    console.log(`Unsupported language: ${language}`);
+    setExecutionStatus("error");
+    setLoading(false);
+    return;
+  }
+
+  if (!code || !code.trim()) {
+    toast.error("Source code is empty");
+    console.log("Source code is empty");
+    setExecutionStatus("error");
+    setLoading(false);
+    return;
+  }
+
     try {
-      const data = await runCode(LANGUAGE_IDS[language], code, stdin);
+      const data = await runCode(languageId, code, stdin);
       console.log(data);
       if (data.status && data.status.id >= 3) {
         setOutput(data.stdout || data.stderr || data.compile_output || "Program finished with no output.");

@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getTeamCodeFiles, saveCode, deleteCodeFileApi, renameCodeFileApi } from "@/lib/api";
 import { io, Socket } from "socket.io-client";
+import { getTemplateForLanguage, getLanguageFromFilename } from "@/lib/CodingLanguageUtils";
 
 
 interface FileNode {
@@ -217,6 +218,7 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
     load();
   }, [teamId]);
 
+
   //-------------------------------
   // CREATE FILE / FOLDER
   //-------------------------------
@@ -234,14 +236,18 @@ export const FileTree = ({ teamId, problemId, onFileSelect, selectedFile, readOn
       basePath = ".";
     }
 
+    // compute language for new file (reuse your filename -> language mapping)
+    const language = isFile ? getLanguageFromFilename(newItemName) : undefined;
+    const defaultContent = isFile ? getTemplateForLanguage(language || "default") : undefined;
+
     try {
       await saveCode({
         teamId,
         filename: newItemName,
         type: newItemType,
         path: basePath,
-        language: isFile ? "plain" : undefined,
-        content: isFile ? "" : undefined,
+        language: language,
+        content: isFile ? defaultContent || "" : undefined,
       });
 
       toast.success(`${newItemType} created`);

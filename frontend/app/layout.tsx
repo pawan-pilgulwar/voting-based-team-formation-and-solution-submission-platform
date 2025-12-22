@@ -11,6 +11,7 @@ import { ChatProvider } from "@/context/ChatContext";
 import { VoteProvider } from "@/context/VoteContext";
 import FloatingChat from "@/components/chat/FloatingChat";
 import TopLoader from "@/components/TopLoader";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,7 @@ export default function RootLayout({
                     <Footer />
                   </main>
                   <FloatingChat />
+                  <Toaster />
                 </SidebarProvider>
               </ThemeProvider>
             </ChatProvider>
