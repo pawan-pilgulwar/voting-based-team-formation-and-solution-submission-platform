@@ -328,11 +328,21 @@ const updateUser = asyncHandler(async (req, res) => {
 
         let uploadedAvatar = null;
         let uploadedCover = null;
-        if (avatarLocalPath) {
-            uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
-        }
-        if (coverLocalPath) {
-            uploadedCover = await uploadOnCloudinary(coverLocalPath);
+        const oldAvatarUrl = user.avatar;
+        const oldCoverUrl = user.coverImage;
+
+        try {
+            if (avatarLocalPath) {
+                uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
+                deleteFromCloudinary(oldAvatarUrl.split('/').slice(-1)[0].split('.')[0]);
+            }
+            if (coverLocalPath) {
+                uploadedCover = await uploadOnCloudinary(coverLocalPath);
+                deleteFromCloudinary(oldCoverUrl.split('/').slice(-1)[0].split('.')[0]);
+            }
+        } catch (uploadError) {
+            console.error("File upload error:", uploadError);
+            throw new ApiError(500, `Failed to upload file: ${uploadError.message}`);
         }
 
         const updateFields = {};
@@ -383,7 +393,8 @@ const updateUser = asyncHandler(async (req, res) => {
 
         return res.status(200).json(new ApiResponse(200, user, "User updated successfully"));
     } catch (error) {
-        throw new ApiError(500, "Something went wrong while updating user");
+        console.error("Update user error:", error);
+        throw error instanceof ApiError ? error : new ApiError(500, `Error updating user: ${error.message}`);
     }
 });
 

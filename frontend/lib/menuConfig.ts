@@ -7,6 +7,7 @@ import {
   BarChart3,
   LucideIcon,
   Upload,
+  FileText,
 } from "lucide-react";
 
 export type UserRole = "student" | "mentor" | "organization" | "admin";
@@ -35,6 +36,7 @@ export const roleMenus: RoleMenuConfig = {
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
+    { title: "Review", url: "/dashboard/mentor/review", icon: FileText },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Setting", url: `/setting`, icon: Settings2},
   ],
@@ -43,6 +45,7 @@ export const roleMenus: RoleMenuConfig = {
     { title: "Hosted Problems", url: "/problems/hostproblem", icon: Upload },
     { title: "Problems", url: "/problems", icon: Swords },
     { title: "Teams", url: "/teams", icon: Users },
+    { title: "Review", url: "/dashboard/organization/review", icon: FileText },
     { title: "Profile", url: "/profile", icon: UserCircle },
     { title: "Setting", url: `/setting`, icon: Settings2}
   ],

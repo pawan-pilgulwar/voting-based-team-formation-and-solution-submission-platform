@@ -103,7 +103,7 @@ export default function ProblemDetailsPage() {
         <div className="flex gap-2">
           {user?.role === "student" && (
             <Button
-              style={{zIndex: 9999 }}
+              style={{zIndex: 1 }}
               onClick={() => castVote(id)}
               disabled={!user || hasVoted[id] || voting}
             >
@@ -113,7 +113,7 @@ export default function ProblemDetailsPage() {
           {user && (user.role === "organization" || user.role === "admin") && (
             <Button
               variant="outline"
-              style={{zIndex: 9999 }}
+              style={{zIndex: 1 }}
               onClick={() => {
                 const el = document.getElementById("solutions-section");
                 if (el) {
@@ -126,7 +126,7 @@ export default function ProblemDetailsPage() {
           )}
           <Button 
             variant="secondary" 
-            style={{zIndex: 9999 }} 
+            style={{zIndex: 1 }} 
             onClick={() => router.push("/problems")}>Back</Button>
         </div>
       </div>

@@ -1,34 +1,76 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
-import { fetchTeams } from "@/lib/api";
+import { fetchTeams, getSolutionsByTeam } from "@/lib/api";
 import type { Team } from "@/lib/types";
-import { getRecommendedTeams } from "@/lib/ai";
+
+interface Solution {
+  _id: string;
+  status: "submitted" | "under-review" | "approved" | "rejected";
+}
+
+interface TeamWithSubmissions {
+  _id: string;
+  name: string;
+  problem: { _id: string; title?: string };
+  solutions: Solution[];
+}
 
 export default function MentorDashboardPage() {
   const { user } = useAuth();
   const [assignedTeams, setAssignedTeams] = useState<Team[]>([]);
-  const [recommended, setRecommended] = useState<Array<{ team: Team; score: number }>>([]);
+  const [teamsWithSubmissions, setTeamsWithSubmissions] = useState<TeamWithSubmissions[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       if (!user?._id || user.role !== "mentor") return;
-      const [teams, rec] = await Promise.all([
-        fetchTeams({ mentorId: user._id }),
-        getRecommendedTeams(user._id).catch(() => []),
-      ]);
-      setAssignedTeams(teams || []);
-      setRecommended(rec as any);
+      
+      try {
+        setLoading(true);
+        const teams = await fetchTeams({ mentorId: user._id });
+        setAssignedTeams(teams || []);
+
+        const teamsData: TeamWithSubmissions[] = [];
+        for (const team of teams) {
+          try {
+            const solutions = await getSolutionsByTeam(team._id);
+            const pendingSolutions = solutions.filter(
+              (s: Solution) => s.status === "submitted" || s.status === "under-review"
+            );
+            if (pendingSolutions.length > 0) {
+              teamsData.push({
+                _id: team._id,
+                name: team.name,
+                problem: team.problem,
+                solutions: pendingSolutions,
+              });
+            }
+          } catch (e) {
+            // Skip if error loading solutions
+          }
+        }
+        setTeamsWithSubmissions(teamsData);
+      } catch (e) {
+        console.error("Failed to load mentor data", e);
+      } finally {
+        setLoading(false);
+      }
     };
+    
     load();
   }, [user?._id, user?.role]);
 
   const assignedCount = assignedTeams.length;
-  const recommendedCount = recommended.length;
+  const pendingReviewCount = teamsWithSubmissions.reduce(
+    (total, team) => total + team.solutions.length,
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -48,9 +90,9 @@ export default function MentorDashboardPage() {
               <Button variant="outline" asChild>
                 <Link href="/problems">Browse Problems</Link>
               </Button>
-              {/* <Button variant="secondary" asChild>
-                <Link href="/dashboard/mentor/review">Mentor Reviews</Link>
-              </Button> */}
+              <Button variant="secondary" asChild>
+                <Link href="/dashboard/mentor/review">Review Submissions</Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -62,7 +104,7 @@ export default function MentorDashboardPage() {
           <CardContent>
             <ul className="text-sm space-y-2">
               <li>Assigned Teams: {assignedCount}</li>
-              <li>Recommended Teams: {recommendedCount}</li>
+              <li>Pending Reviews: {pendingReviewCount}</li>
             </ul>
           </CardContent>
         </Card>
@@ -75,7 +117,8 @@ export default function MentorDashboardPage() {
             <CardDescription>Your current mentorship scope</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {assignedTeams.length === 0 && (
+            {loading && <div className="text-sm text-muted-foreground">Loading teams...</div>}
+            {!loading && assignedTeams.length === 0 && (
               <div className="text-sm text-muted-foreground">You are not assigned to any teams yet. Use the Teams page to offer mentorship.</div>
             )}
             {assignedTeams.slice(0, 5).map((t) => (
@@ -96,29 +139,30 @@ export default function MentorDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>AI Recommended Teams</CardTitle>
-            <CardDescription>Teams that match your expertise</CardDescription>
+            <CardTitle>Pending Reviews</CardTitle>
+            <CardDescription>Submissions awaiting your feedback</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recommended.length === 0 && (
-              <div className="text-sm text-muted-foreground">No recommendations yet. Update your profile skills and expertise to get better matches.</div>
+            {loading && <div className="text-sm text-muted-foreground">Loading submissions...</div>}
+            {!loading && teamsWithSubmissions.length === 0 && (
+              <div className="text-sm text-muted-foreground">No submissions awaiting review. Check back soon!</div>
             )}
-            {recommended.slice(0, 5).map((item: any) => {
-              const team: Team = item.team || item;
-              return (
-                <div key={team._id} className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{team.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Members: {team.members?.length ?? 0}
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href={`/teams/${team._id}`}>Open</Link>
-                  </Button>
+            {teamsWithSubmissions.slice(0, 5).map((team) => (
+              <div key={team._id} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-sm">{team.name}</div>
+                  <Badge variant="outline">{team.solutions.length} submission(s)</Badge>
                 </div>
-              );
-            })}
+                <div className="text-xs text-muted-foreground">
+                  Problem: {typeof team.problem === "string" ? team.problem : team.problem?.title}
+                </div>
+              </div>
+            ))}
+            {teamsWithSubmissions.length > 0 && (
+              <Button className="w-full mt-4" asChild>
+                <Link href="/dashboard/mentor/review">Review All Submissions</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </section>

@@ -59,10 +59,10 @@ export default function RootLayout({
                       <TopNav />
                     </header>
                     <div className="flex-1 p-6">{children}</div>
-                    <Footer />
+                    <div style={{zIndex:999}}><Footer /></div>
                   </main>
                   <FloatingChat />
-                  <Toaster />
+                  {/* <Toaster /> */}
                 </SidebarProvider>
               </ThemeProvider>
             </ChatProvider>
