@@ -41,7 +41,13 @@ export default function ProblemsListPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchProblems();
+        let data = await fetchProblems();
+        console.log(data);
+        data = data.filter((p) => {
+          if (!p.deadline) return true;
+          const deadlineDate = new Date(p.deadline);
+          return deadlineDate >= new Date();
+        });
         setProblems(data);        // prefetch vote counts
         data.forEach((p) => getVoteCount(p._id));
       } catch (e: any) {

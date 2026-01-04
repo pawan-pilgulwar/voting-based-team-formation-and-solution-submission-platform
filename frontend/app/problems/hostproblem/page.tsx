@@ -34,7 +34,12 @@ const problemSchema = z.object({
   description: z.string().min(20, "Description must be at least 20 characters"),
   tags: z.string().min(1, "At least one tag required"),
   difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
-  deadline: z.string().optional(),
+  deadline: z.string().optional().refine((date) => {
+    if (!date) return true; // allow empty,
+    const today = new Date();
+    const selectedDate = new Date(date);
+    return selectedDate >= today;
+  }, { message: "Deadline must be today or in the future" }),
   status: z.enum(["open", "in-progress", "completed", "archived"]).default("open"),
 });
 
@@ -176,7 +181,12 @@ export default function HostProblemPage() {
             {/* Deadline */}
             <div className="grid gap-2">
               <Label htmlFor="deadline">Deadline</Label>
-              <Input id="deadline" type="date" {...register("deadline")} />
+              <Input 
+                id="deadline" 
+                type="date" 
+                {...register("deadline")}
+                min={new Date().toISOString().split('T')[0]}
+                />
             </div>
 
             {/* Status */}
